@@ -1,13 +1,14 @@
 #include <Arduino.h>
 
-#define LoraTest 1
-#define GPSTest 0
+#define LoraTest 0
+#define GPSTest 1
 #define IMUTest 0
 
-// put function declarations here:
+#ifdef GPSTest
+#include "gps/gps.h"
+#endif
 
 void setup() {
-  // put your setup code here, to run once:
   #ifdef LoraTest
   #endif
 
@@ -20,11 +21,11 @@ void setup() {
 }
 
 void loop() {
-  // put your main code here, to run repeatedly:
   #ifdef LoraTest
   #endif
 
   #ifdef GPSTest
+  loopGPS();
   #endif
 
   #ifdef IMUTest

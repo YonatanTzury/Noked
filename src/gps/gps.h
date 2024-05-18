@@ -1,0 +1,4 @@
+
+void initGPS();
+
+void loopGPS();
