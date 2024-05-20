@@ -4,9 +4,9 @@
 void Lora::init(int nss, int rst, int dio0, int sck, int miso, int mosi, SPIClass& spi) {
   Lora::_lora.setPins(nss, rst, dio0);
   Lora::_lora.setSPI(spi);
-  // Lora::_lora.enableCrc();
+  Lora::_lora.enableCrc();
 
-  while (!Lora::_lora.begin(433E6, sck, miso, mosi, nss)) {
+  while (!Lora::_lora.begin(433E6)) {
     Serial.println(".");
     delay(500);
   }
