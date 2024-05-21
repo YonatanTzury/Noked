@@ -1,7 +1,7 @@
 #include <Arduino.h>
 #include "lora.h"
 
-void Lora::init(int nss, int rst, int dio0, int sck, int miso, int mosi, SPIClass& spi) {
+void Lora::init(int nss, int rst, int dio0, SPIClass& spi) {
   Lora::_lora.setPins(nss, rst, dio0);
   Lora::_lora.setSPI(spi);
   Lora::_lora.enableCrc();
