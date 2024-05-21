@@ -15,7 +15,7 @@ void Manager::init() {
 
 
 void Manager::loop() {
-  if (Manager::devices[DEVICE_ID].last_updated + UPDATE_INTERVAL < millis()) {
+  if (Manager::last_updated + UPDATE_INTERVAL < millis()) {
     Manager::update();
   }
 
@@ -45,6 +45,8 @@ void Manager::loop() {
 }
 
 void Manager::update() {
+  Manager::last_updated = millis();
+
   // TODO change to real time
   Manager::devices[DEVICE_ID].last_updated = millis();
   // TODO read GPS

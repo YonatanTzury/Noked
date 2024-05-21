@@ -33,4 +33,5 @@ class Manager {
   Device tmp_devices[MAX_DEVICES] = { 0 };
   uint8_t id = DEVICE_ID;
   Lora lora;
+  unsigned long last_updated;
 };
