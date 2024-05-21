@@ -19,13 +19,12 @@ void Lora::send(const uint8_t* buffer, size_t size) {
   Lora::_lora.endPacket();
 }
 
-byte* Lora::read() {
-  byte* buffer = NULL;
+size_t Lora::read(byte* buffer, size_t size) {
   int packetSize = Lora::_lora.parsePacket();
-  if (packetSize > 0) {
-    buffer = (byte *)malloc(packetSize);
-    Lora::_lora.readBytes(buffer, packetSize);
+
+  if (packetSize == 0 || packetSize > size) {
+    return 0;
   }
 
-  return buffer;
+  return Lora::_lora.readBytes(buffer, packetSize);
 }
