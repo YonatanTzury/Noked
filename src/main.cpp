@@ -1,7 +1,7 @@
 #include <Arduino.h>
 
-// #define LoraTest
-#define GPSTest
+#define LoraTest
+// #define GPSTest
 // #define IMUTest
 
 #ifdef GPSTest
@@ -12,10 +12,17 @@
 #include "imu/imu.h"
 #endif
 
+#ifdef LoraTest
+#include "manager\manager.h"
+
+Manager manager;
+#endif
+
 void setup() {
   Serial.begin(9600);
 
   #ifdef LoraTest
+  manager.init();
   #endif
 
   #ifdef GPSTest
@@ -29,6 +36,7 @@ void setup() {
 
 void loop() {
   #ifdef LoraTest
+  manager.loop();
   #endif
 
   #ifdef GPSTest
