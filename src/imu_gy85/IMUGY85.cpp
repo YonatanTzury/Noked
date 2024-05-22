@@ -6,25 +6,43 @@
 	Based on multiple libraries of Jeff Rowberg(https://github.com/jrowberg)
 */
 #include "IMUGY85.h"
+// #include <Adafruit_AHRS_Madgwick.h>
+// #include <Adafruit_AHRS_NXPFusion.h>
+// #include <Adafruit_AHRS_Mahony.h>
 
 IMUGY85::IMUGY85()
 {
 
 }
 
+Adafruit_Mahony fusion;
+
 void IMUGY85::init()
 {
 	Wire.begin();
 	accel.initialize();
 	gyro.initialize();
-	mag.initialize();
+	// mag.initialize();
+	mag2.begin();
+	fusion.begin(100);
 }
 
 void IMUGY85::update()
 {
 	accel.getAcceleration(&accelCount[0], &accelCount[1], &accelCount[2]);
 	gyro.getRotation(&gyroCount[0], &gyroCount[1], &gyroCount[2]);
-	mag.getHeading(&magCount[0], &magCount[1], &magCount[2]);
+	// mag.getHeading(&magCount[0], &magCount[1], &magCount[2]);
+	// xyz
+	// xzy
+	// zxy
+	// zyx
+	// yzx
+	// yxz
+	sensors_event_t event;
+	mag2.getEvent(&event);
+	magCount[0] = event.magnetic.x;
+	magCount[1] = event.magnetic.y;
+	magCount[2] = event.magnetic.z;
 
 	getAres();
 
@@ -64,29 +82,45 @@ void IMUGY85::update()
 	Now = micros();
 	deltat = ((Now - lastUpdate) / 1000000.0f); // set integration time by time elapsed since last filter update
 	lastUpdate = Now;
-	MadgwickQuaternionUpdate(ax, ay, az, (gx)*PI / 180.0f, (gy)*PI / 180.0f, (gz)*PI / 180.0f, mx, my, mz); // change mx & my, and negate az to have all axes in one direction!!!
-	computeEuler();
+
+	// gx = (gx)*PI / 180.0f;
+	// gy = (gy)*PI / 180.0f;
+	// gz = (gz)*PI / 180.0f;
+
+	fusion.update(gx, gy, gz, ax, ay, az, mx, my, mz);
+
+	pitch = fusion.getPitch();
+	roll = fusion.getRoll();
+	yaw = fusion.getYaw();
+
+	// MadgwickQuaternionUpdate(ax, ay, az, gx, gy, gz, mx, my, mz); // change mx & my, and negate az to have all axes in one direction!!!
+	// computeEuler();
 }
 
 double IMUGY85::getRoll()
 {
-	return degrees(roll);
+	return roll;
 }
 
 double IMUGY85::getPitch()
 {
-	return degrees(pitch);
+	return pitch;
 }
 
 double IMUGY85::getYaw()
 {
-	double indegrees = degrees(yaw);
-	return indegrees < 0 ? indegrees + 360 : indegrees;
+	// double indegrees = degrees(yaw);
+	return yaw < 0 ? yaw + 360 : yaw;
 }
 
 double IMUGY85::getRawYaw()
 {
 	return degrees(yaw);
+}
+
+float IMUGY85::getHeading()
+{
+	return mag_heading;
 }
 
 void IMUGY85::getAcceleration(double* a1, double* a2, double* a3)

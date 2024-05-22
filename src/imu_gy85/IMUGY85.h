@@ -11,6 +11,8 @@
 #include "ADXL345.h"
 #include "HMC5883L.h"
 #include "ITG3200.h"
+#include <Adafruit_Sensor.h>
+#include <Adafruit_HMC5883_U.h>
 #include <string.h>
 
 class IMUGY85 {
@@ -35,7 +37,7 @@ class IMUGY85 {
 	};
 
 	uint8_t Gscale = GFS_CUSTOM;
-	uint8_t Ascale = AFS_4G;
+	uint8_t Ascale = AFS_16G;
 	uint8_t Mscale = MFS_16BITS; // Choose either 14-bit or 16-bit magnetometer resolution
 	float aRes, gRes, mRes;      // scale resolutions per LSB for the sensors
 
@@ -46,6 +48,7 @@ class IMUGY85 {
 	float magbias_max[3] = {0, 0, 0};
 	float magbias_min[3] = {0, 0, 0};
 	float gyroBias[3] = {0, 0, 0}, accelBias[3] = {0, 0, 0};      // Bias corrections for gyro and accelerometer
+	float mag_heading = 0;
 
 
 	float GyroMeasError = PI * (10.0f / 180.0f);   // gyroscope measurement error in rads/s (start at 40 deg/s)
@@ -68,6 +71,8 @@ class IMUGY85 {
 	ADXL345 accel;
 	ITG3200 gyro;
 	HMC5883L mag;
+	Adafruit_HMC5883_Unified mag2;
+
 	double pitch=0, roll=0, yaw=0;
 
     public:
@@ -81,6 +86,7 @@ class IMUGY85 {
 		void getAcceleration(double *a1, double *a2, double *a3);
 		void getGyro(double *m1, double *m2, double *m3);
 		void getMag(double *m1, double *m2, double *m3);
+		float getHeading();
 	private:
 		void computeEuler();
 		void getAres();

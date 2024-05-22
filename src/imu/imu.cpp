@@ -75,7 +75,9 @@ void loopIMU() {
         Serial.print(roll);
         Serial.print("\t");
         Serial.print(yaw);
-        Serial.print("\t");
+        Serial.print("\t (");
+        Serial.print(imu.getHeading());
+        Serial.print(") \t");
         Serial.println();
         printAccel();
         printGyro();
@@ -83,6 +85,4 @@ void loopIMU() {
         // printRollPitchYaw();
         lastTime = millis();
     }
-
-    delay(10);
 }
