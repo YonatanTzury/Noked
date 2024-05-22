@@ -1,8 +1,8 @@
 #include <Arduino.h>
 
-#define LoraTest 1
-#define GPSTest 0
-#define IMUTest 0
+#define LoraTest
+// #define GPSTest
+// #define IMUTest
 
 #ifdef LoraTest
 #include "manager\manager.h"
