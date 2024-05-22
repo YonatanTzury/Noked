@@ -11,11 +11,13 @@ struct Location
 struct Device
 {
   bool is_active;
+  uint8_t id;
   Location location;
   unsigned long last_updated;
 };
 
-#define UPDATE_INTERVAL (60 * 1000) // MINUTE
+#define UPDATE_INTERVAL (60 * 1000) // Minutes
+#define DEVICE_ALIVE_TIMOUT (300 * 1000) // 5 Minutes
 
 #define MAX_DEVICES 30
 #define DEVICE_ID 0

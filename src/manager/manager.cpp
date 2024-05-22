@@ -10,12 +10,13 @@ void Manager::init() {
   Manager::lora.init(lora1_nss, lora1_rst, lora1_dio0, _hspi);
 
   Manager::devices[DEVICE_ID].is_active = 1;
+  Manager::devices[DEVICE_ID].id = DEVICE_ID;
   Manager::update();
 }
 
 
 void Manager::loop() {
-  if (Manager::last_updated + UPDATE_INTERVAL < millis()) {
+  if (millis() - Manager::last_updated > UPDATE_INTERVAL) {
     Manager::update();
   }
 
@@ -24,9 +25,18 @@ void Manager::loop() {
     return;
   }
 
+  if (len % sizeof(Device) != 0) {
+    return;
+  }
+
+  uint8_t amount_of_devices = len / sizeof(Device);
+  if (amount_of_devices > MAX_DEVICES) {
+    return;
+  }
+
   bool is_updated = false;
-  for (int i = 0; i < MAX_DEVICES; i++) {
-    if (i == DEVICE_ID) {
+  for (int i = 0; i < amount_of_devices; i++) {
+    if (Manager::tmp_devices[i].id == DEVICE_ID) {
       continue;
     }
 
@@ -34,8 +44,7 @@ void Manager::loop() {
       continue;
     }
 
-    // TODO make sure this actully copy the data and not just the pointer
-    Manager::devices[i] = Manager::tmp_devices[i];
+    Manager::devices[Manager::tmp_devices[i].id] = Manager::tmp_devices[i];
     is_updated = true;
   }
 
@@ -57,5 +66,19 @@ void Manager::update() {
 }
 
 void Manager::sync() {
-  Manager::lora.send((byte*)Manager::devices, sizeof(Device)*MAX_DEVICES);
+  uint8_t counter = 0;
+  for (int i = 0; i < MAX_DEVICES; i++) {
+    if (Manager::devices[DEVICE_ID].is_active == 0) {
+      continue;
+    }
+
+    if (millis() - Manager::devices[DEVICE_ID].last_updated > DEVICE_ALIVE_TIMOUT) {
+      continue;
+    }
+
+    Manager::tmp_devices[counter] = Manager::devices[i];
+    counter++;
+  }
+
+  Manager::lora.send((byte*)Manager::tmp_devices, sizeof(Device)*counter);
 }
