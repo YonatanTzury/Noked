@@ -8,6 +8,7 @@
 void Manager::init() {
   SPIClass _hspi = SPIClass(HSPI);
   Manager::lora.init(lora1_nss, lora1_rst, lora1_dio0, _hspi);
+  Manager::gps.init();
 
   Manager::devices[DEVICE_ID].is_active = 1;
   Manager::devices[DEVICE_ID].id = DEVICE_ID;
@@ -54,13 +55,14 @@ void Manager::loop() {
 }
 
 void Manager::update() {
-  Manager::last_updated = millis();
+  Location tmpLocation = { 0 };
+  if (!Manager::gps.getLocation(&tmpLocation)) {
+    return;
+  }
+  Manager::devices[DEVICE_ID].location = tmpLocation;
+  Manager::devices[DEVICE_ID].last_updated = Manager::gps.getTime();
 
-  // TODO change to real time
-  Manager::devices[DEVICE_ID].last_updated = millis();
-  // TODO read GPS
-  Manager::devices[DEVICE_ID].location.lat = 10;
-  Manager::devices[DEVICE_ID].location.lon = 10;
+  Manager::last_updated = millis();
 
   Manager::sync();
 }

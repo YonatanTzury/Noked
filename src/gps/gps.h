@@ -1,4 +1,18 @@
+struct Location
+{
+  double lat;
+  double lon;
+};
 
-void setupGPS();
+class GPS {
+ public:
+  void init();
+  bool getLocation(Location* out);
+  double getTime();
 
-void loopGPS();
+ private:
+  double baseTime;
+  double lastUpdated;
+
+  bool rawGetTime(double* out);
+};

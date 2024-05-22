@@ -1,19 +1,14 @@
 #include <Arduino.h>
 
 #include "..\lora\lora.h"
-
-struct Location
-{
-  unsigned long lat;
-  unsigned long lon;
-};
+#include "..\gps\gps.h"
 
 struct Device
 {
   bool is_active;
   uint8_t id;
   Location location;
-  unsigned long last_updated;
+  double last_updated;
 };
 
 #define UPDATE_INTERVAL (60 * 1000) // Minutes
@@ -35,5 +30,6 @@ class Manager {
   Device tmp_devices[MAX_DEVICES] = { 0 };
   uint8_t id = DEVICE_ID;
   Lora lora;
-  unsigned long last_updated;
+  GPS gps;
+  double last_updated;
 };

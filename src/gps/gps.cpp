@@ -1,60 +1,61 @@
 #include <TinyGPSPlus.h>
 
+#include "gps.h"
+
 #define RXD2 16
 #define TXD2 17
 
-TinyGPSPlus gps;
+void GPS::init() {
+  Serial2.begin(9600, SERIAL_8N1, RXD2, TXD2);
+  while (!GPS::rawGetTime(&(GPS::baseTime))) {
+    delay(1000);
+  }
+  GPS::lastUpdated = millis();
+}
 
-bool displayTinyGPSInfo()
-{
-  if (!gps.location.isValid())
-  {
+double GPS::getTime() {
+  double out;
+  if (GPS::rawGetTime(&out)) {
+    GPS::lastUpdated = millis();
+    GPS::baseTime = out;
+
+    return out;
+  }
+
+  return (millis() - GPS::lastUpdated) + GPS::baseTime;
+}
+
+bool GPS::rawGetTime(double* out) {
+  if (!Serial2.available()) {
+    return false;
+  }
+  char serialRead = Serial2.read();
+
+  TinyGPSPlus gps;
+  gps.encode(serialRead);
+  if (!gps.time.isValid()) {
     return false;
   }
 
-  Serial.println("*** Tiny GPS Data ***");
-
-  double lat = gps.location.lat();
-  double lng = gps.location.lng();
-
-  Serial.print(F("Location: "));
-  Serial.print(lat, 6);
-  Serial.print(F(","));
-  Serial.print(lng, 6);
-  Serial.printf(" [https://www.google.com/maps/search/%lf,%lf]", lat, lng);
-  Serial.println();
-
-  Serial.println("=== Tiny GPS Data ===");
+  *out = (double)gps.time.value();
 
   return true;
 }
 
-void setupGPS()
-{
-  Serial2.begin(9600, SERIAL_8N1, RXD2, TXD2);
-
-  delay(3000);
-
-  Serial.println("Running...");
-}
-
-bool use = false;
-
-void loopGPS()
-{
-  if (!Serial2.available())
-  {
-    return;
+bool GPS::getLocation(Location* out) {
+  if (!Serial2.available()) {
+    return false;
   }
-
   char serialRead = Serial2.read();
 
+  TinyGPSPlus gps;
   gps.encode(serialRead);
-  bool valid = displayTinyGPSInfo();
-  if (!valid)
-  {
-    return;
+  if (!gps.location.isValid()) {
+    return false;
   }
 
-  delay(1000);
+  out->lat = gps.location.lat();
+  out->lon = gps.location.lng();
+
+  return true;
 }
