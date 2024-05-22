@@ -47,8 +47,6 @@ void loopGPS()
     return;
   }
 
-  Serial.println("Reading");
-
   char serialRead = Serial2.read();
 
   gps.encode(serialRead);
