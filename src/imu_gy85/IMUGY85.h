@@ -36,7 +36,7 @@ class IMUGY85 {
 
 	uint8_t Gscale = GFS_CUSTOM;
 	uint8_t Ascale = AFS_4G;
-	uint8_t Mscale = MFS_14BITS; // Choose either 14-bit or 16-bit magnetometer resolution
+	uint8_t Mscale = MFS_16BITS; // Choose either 14-bit or 16-bit magnetometer resolution
 	float aRes, gRes, mRes;      // scale resolutions per LSB for the sensors
 
 	int16_t accelCount[3];  // Stores the 16-bit signed accelerometer sensor output
@@ -52,6 +52,7 @@ class IMUGY85 {
 	float GyroMeasDrift = PI * (0.0f  / 180.0f);   // gyroscope measurement drift in rad/s/s (start at 0.0 deg/s/s)
 	float beta = sqrt(3.0f / 4.0f) * GyroMeasError;   // compute beta
 	float zeta = sqrt(3.0f / 4.0f) * GyroMeasDrift;   // compute zeta, the other free parameter in the Madgwick scheme usually set to a small or zero value
+
 	#define Kp 2.0f * 5.0f // these are the free parameters in the Mahony filter and fusion scheme, Kp for proportional feedback, Ki for integral
 	#define Ki 0.1f
 
@@ -77,9 +78,9 @@ class IMUGY85 {
 		double getPitch();
 		double getYaw();
 		double getRawYaw();
-		double getAcceleration(double *a1, double *a2, double *a3);
-		double getGyro(double *m1, double *m2, double *m3);
-		double getMag(double *m1, double *m2, double *m3);
+		void getAcceleration(double *a1, double *a2, double *a3);
+		void getGyro(double *m1, double *m2, double *m3);
+		void getMag(double *m1, double *m2, double *m3);
 	private:
 		void computeEuler();
 		void getAres();

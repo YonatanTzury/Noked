@@ -1,5 +1,5 @@
 /*
-	IMUGY85.cpp - IMU library for GY85 9DOF IMU (ADXL345 accelerometer, ITG3200 gyroscope and HMC5883L magnetometer) 
+	IMUGY85.cpp - IMU library for GY85 9DOF IMU (ADXL345 accelerometer, ITG3200 gyroscope and HMC5883L magnetometer)
 	using open source Madgwick quaternion filter
 	Requires I2Cdev, ADXL345, HMC5883L, ITG3200 libraries (https://github.com/jrowberg/i2cdevlib/tree/master/Arduino)
 	By thg(https://github.com/fookingthg). Jul 2018
@@ -21,25 +21,24 @@ void IMUGY85::init()
 }
 
 void IMUGY85::update()
-{  
-
+{
 	accel.getAcceleration(&accelCount[0], &accelCount[1], &accelCount[2]);
 	gyro.getRotation(&gyroCount[0], &gyroCount[1], &gyroCount[2]);
 	mag.getHeading(&magCount[0], &magCount[1], &magCount[2]);
 
 	getAres();
 
-	ax = (float)accelCount[0]*aRes; // - accelBias[0];  // get actual g value, this depends on scale being set
-	ay = (float)accelCount[1]*aRes; // - accelBias[1];   
-	az = (float)accelCount[2]*aRes; // - accelBias[2];  
+	ax = (float)accelCount[0] * aRes - accelBias[0];  // get actual g value, this depends on scale being set
+	ay = (float)accelCount[1] * aRes - accelBias[1];
+	az = (float)accelCount[2] * aRes - accelBias[2];
 
 	getGres();
 
-	gx = (float)gyroCount[0]*gRes;  // get actual gyro value, this depends on scale being set
-	gy = (float)gyroCount[1]*gRes;  
-	gz = (float)gyroCount[2]*gRes;   
+	gx = (float)gyroCount[0] * gRes - gyroBias[0];  // get actual gyro value, this depends on scale being set
+	gy = (float)gyroCount[1] * gRes - gyroBias[1];
+	gz = (float)gyroCount[2] * gRes - gyroBias[2];
 
-	getMres();  
+	getMres();
 
 	// check the magnetic max. and min. Values
 	if (magCount[0] > magbias_max[0]) magbias_max[0] = magCount[0];
@@ -50,83 +49,82 @@ void IMUGY85::update()
 	if (magCount[1] < magbias_min[1]) magbias_min[1] = magCount[1];
 	if (magCount[2] < magbias_min[2]) magbias_min[2] = magCount[2];
 
-	magbias[0] = ((magbias_max[0] + magbias_min[0])/2);  // User environmental x-axis correction in milliGauss, should be automatically calculated
-	magbias[1] = ((magbias_max[1] + magbias_min[1])/2);  // User environmental x-axis correction in milliGauss
-	magbias[2] = ((magbias_max[2] + magbias_min[2])/2);  // User environmental x-axis correction in milliGauss 
+	magbias[0] = ((magbias_max[0] + magbias_min[0]) / 2);  // User environmental x-axis correction in milliGauss, should be automatically calculated
+	magbias[1] = ((magbias_max[1] + magbias_min[1]) / 2);  // User environmental x-axis correction in milliGauss
+	magbias[2] = ((magbias_max[2] + magbias_min[2]) / 2);  // User environmental x-axis correction in milliGauss
 
 	// mx = (float)(magCount[0]) ;  // get actual magnetometer value, this depends on scale being set
-	// my = (float)(magCount[1]) ;  
-	// mz = (float)(magCount[2]);   
+	// my = (float)(magCount[1]) ;
+	// mz = (float)(magCount[2]);
 
-	   mx = (float)(magCount[0]- magbias[0])*mRes*magCalibration[0] ;  // get actual magnetometer value, this depends on scale being set
-	   my = (float)(magCount[1]- magbias[1])*mRes*magCalibration[1] ;  
-	   mz = (float)(magCount[2]- magbias[2])*mRes*magCalibration[2] ;   
-	   mx = my = mz = 1;
+	mx = (float)(magCount[0] - magbias[0]) * mRes * magCalibration[0];  // get actual magnetometer value, this depends on scale being set
+	my = (float)(magCount[1] - magbias[1]) * mRes * magCalibration[1];
+	mz = (float)(magCount[2] - magbias[2]) * mRes * magCalibration[2];
 
 	Now = micros();
-	deltat = ((Now - lastUpdate)/1000000.0f); // set integration time by time elapsed since last filter update
+	deltat = ((Now - lastUpdate) / 1000000.0f); // set integration time by time elapsed since last filter update
 	lastUpdate = Now;
-	MadgwickQuaternionUpdate(ax, ay, az, (gx)*PI/180.0f, (gy)*PI/180.0f, (gz)*PI/180.0f,  mx,  my, mz); // change mx & my, and negate az to have all axes in one direction!!!
+	MadgwickQuaternionUpdate(ax, ay, az, (gx)*PI / 180.0f, (gy)*PI / 180.0f, (gz)*PI / 180.0f, mx, my, mz); // change mx & my, and negate az to have all axes in one direction!!!
 	computeEuler();
 }
 
 double IMUGY85::getRoll()
 {
-    return degrees(roll);
+	return degrees(roll);
 }
 
 double IMUGY85::getPitch()
 {
-    return degrees(pitch);
+	return degrees(pitch);
 }
 
 double IMUGY85::getYaw()
 {
-    double indegrees = degrees(yaw);
-    return indegrees<0?indegrees+360:indegrees;
+	double indegrees = degrees(yaw);
+	return indegrees < 0 ? indegrees + 360 : indegrees;
 }
 
 double IMUGY85::getRawYaw()
 {
-    return degrees(yaw);
+	return degrees(yaw);
 }
 
-double IMUGY85::getAcceleration(double *a1, double *a2, double *a3)
+void IMUGY85::getAcceleration(double* a1, double* a2, double* a3)
 {
-    *a1 = ax;
-    *a2 = ay;
-    *a3 = az;
+	*a1 = ax;
+	*a2 = ay;
+	*a3 = az;
 }
 
-double IMUGY85::getGyro(double *m1, double *m2, double *m3)
+void IMUGY85::getGyro(double* m1, double* m2, double* m3)
 {
-    *m1 = gx;
-    *m2 = gy;
-    *m3 = gz;
+	*m1 = gx;
+	*m2 = gy;
+	*m3 = gz;
 }
 
-double IMUGY85::getMag(double *a1, double *a2, double *a3)
+void IMUGY85::getMag(double* a1, double* a2, double* a3)
 {
-    *a1 = mx;
-    *a2 = my;
-    *a3 = mz;
+	*a1 = mx;
+	*a2 = my;
+	*a3 = mz;
 }
 
 void IMUGY85::computeEuler()
 {
-    double q2sqr = q[2] * q[2];
-    double t0 = -2.0 * (q2sqr + q[3] * q[3]) + 1.0;
-    double t1 = +2.0 * (q[1] * q[2] + q[0] * q[3]);
-    double t2 = -2.0 * (q[1] * q[3] - q[0] * q[2]);
-    double t3 = +2.0 * (q[2] * q[3] + q[0] * q[1]);
-    double t4 = -2.0 * (q[1] * q[1] + q2sqr) + 1.0;
+	double q2sqr = q[2] * q[2];
+	double t0 = -2.0 * (q2sqr + q[3] * q[3]) + 1.0;
+	double t1 = +2.0 * (q[1] * q[2] + q[0] * q[3]);
+	double t2 = -2.0 * (q[1] * q[3] - q[0] * q[2]);
+	double t3 = +2.0 * (q[2] * q[3] + q[0] * q[1]);
+	double t4 = -2.0 * (q[1] * q[1] + q2sqr) + 1.0;
 
-    t2 = t2 > 1.0 ? 1.0 : t2;
-    t2 = t2 < -1.0 ? -1.0 : t2;
+	t2 = t2 > 1.0 ? 1.0 : t2;
+	t2 = t2 < -1.0 ? -1.0 : t2;
 
-    pitch = asin(t2);
-    roll = atan2(t3, t4);
-    yaw = atan2(t1, t0);
+	pitch = asin(t2);
+	roll = atan2(t3, t4);
+	yaw = atan2(t1, t0);
 }
 
 // Implementation of Sebastian Madgwick's "...efficient orientation filter for... inertial/magnetic sensor arrays"
@@ -171,7 +169,7 @@ void IMUGY85::MadgwickQuaternionUpdate(float ax, float ay, float az, float gx, f
 	// Normalise accelerometer measurement
 	norm = sqrt(ax * ax + ay * ay + az * az);
 	if (norm == 0.0f) return; // handle NaN
-	norm = 1.0f/norm;
+	norm = 1.0f / norm;
 	ax *= norm;
 	ay *= norm;
 	az *= norm;
@@ -179,7 +177,7 @@ void IMUGY85::MadgwickQuaternionUpdate(float ax, float ay, float az, float gx, f
 	// Normalise magnetometer measurement
 	norm = sqrt(mx * mx + my * my + mz * mz);
 	if (norm == 0.0f) return; // handle NaN
-	norm = 1.0f/norm;
+	norm = 1.0f / norm;
 	mx *= norm;
 	my *= norm;
 	mz *= norm;
@@ -202,7 +200,7 @@ void IMUGY85::MadgwickQuaternionUpdate(float ax, float ay, float az, float gx, f
 	s3 = -_2q1 * (2.0f * q2q4 - _2q1q3 - ax) + _2q4 * (2.0f * q1q2 + _2q3q4 - ay) - 4.0f * q3 * (1.0f - 2.0f * q2q2 - 2.0f * q3q3 - az) + (-_4bx * q3 - _2bz * q1) * (_2bx * (0.5f - q3q3 - q4q4) + _2bz * (q2q4 - q1q3) - mx) + (_2bx * q2 + _2bz * q4) * (_2bx * (q2q3 - q1q4) + _2bz * (q1q2 + q3q4) - my) + (_2bx * q1 - _4bz * q3) * (_2bx * (q1q3 + q2q4) + _2bz * (0.5f - q2q2 - q3q3) - mz);
 	s4 = _2q2 * (2.0f * q2q4 - _2q1q3 - ax) + _2q3 * (2.0f * q1q2 + _2q3q4 - ay) + (-_4bx * q4 + _2bz * q2) * (_2bx * (0.5f - q3q3 - q4q4) + _2bz * (q2q4 - q1q3) - mx) + (-_2bx * q1 + _2bz * q3) * (_2bx * (q2q3 - q1q4) + _2bz * (q1q2 + q3q4) - my) + _2bx * q2 * (_2bx * (q1q3 + q2q4) + _2bz * (0.5f - q2q2 - q3q3) - mz);
 	norm = sqrt(s1 * s1 + s2 * s2 + s3 * s3 + s4 * s4);    // normalise step magnitude
-	norm = 1.0f/norm;
+	norm = 1.0f / norm;
 	s1 *= norm;
 	s2 *= norm;
 	s3 *= norm;
@@ -218,7 +216,7 @@ void IMUGY85::MadgwickQuaternionUpdate(float ax, float ay, float az, float gx, f
 	q3 += qDot3 * deltat;
 	q4 += qDot4 * deltat;
 	norm = sqrt(q1 * q1 + q2 * q2 + q3 * q3 + q4 * q4);
-	norm = 1.0f/norm;
+	norm = 1.0f / norm;
 	q[0] = q1 * norm;
 	q[1] = q2 * norm;
 	q[2] = q3 * norm;
@@ -228,50 +226,50 @@ void IMUGY85::MadgwickQuaternionUpdate(float ax, float ay, float az, float gx, f
 void IMUGY85::getMres() {
 	switch (Mscale)
 	{
-		case MFS_14BITS:
-			mRes = 10.*4219./8190.; // Proper scale to return milliGauss
-			break;
-		case MFS_16BITS:
-			mRes = 10.*4219./32760.0; // Proper scale to return milliGauss
-			break;
+	case MFS_14BITS:
+		mRes = 10. * 4219. / 8190.; // Proper scale to return milliGauss
+		break;
+	case MFS_16BITS:
+		mRes = 10. * 4219. / 32760.0; // Proper scale to return milliGauss
+		break;
 	}
 }
 
 void IMUGY85::getGres() {
 	switch (Gscale)
 	{
-		case GFS_250DPS:
-			gRes = 250.0/32768.0;
-			break;
-		case GFS_500DPS:
-			gRes = 500.0/32768.0;
-			break;
-		case GFS_1000DPS:
-			gRes = 1000.0/32768.0;
-			break;
-		case GFS_2000DPS:
-			gRes = 2000.0/32768.0;
-			break;
-		case GFS_CUSTOM:
-			gRes = 2400.0/32768.0;
-			break;
+	case GFS_250DPS:
+		gRes = 250.0 / 32768.0;
+		break;
+	case GFS_500DPS:
+		gRes = 500.0 / 32768.0;
+		break;
+	case GFS_1000DPS:
+		gRes = 1000.0 / 32768.0;
+		break;
+	case GFS_2000DPS:
+		gRes = 2000.0 / 32768.0;
+		break;
+	case GFS_CUSTOM:
+		gRes = 2400.0 / 32768.0;
+		break;
 	}
 }
 
 void IMUGY85::getAres() {
 	switch (Ascale)
 	{
-		case AFS_2G:
-			aRes = 2.0/32768.0;
-			break;
-		case AFS_4G:
-			aRes = 4.0/32768.0;
-			break;
-		case AFS_8G:
-			aRes = 8.0/32768.0;
-			break;
-		case AFS_16G:
-			aRes = 16.0/32768.0;
-			break;
+	case AFS_2G:
+		aRes = 2.0 / 32768.0;
+		break;
+	case AFS_4G:
+		aRes = 4.0 / 32768.0;
+		break;
+	case AFS_8G:
+		aRes = 8.0 / 32768.0;
+		break;
+	case AFS_16G:
+		aRes = 16.0 / 32768.0;
+		break;
 	}
 }
