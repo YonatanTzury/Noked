@@ -1,22 +1,29 @@
 #include <Arduino.h>
 
-#define LoraTest 0
-#define GPSTest 1
-#define IMUTest 0
+// #define LoraTest
+#define GPSTest
+// #define IMUTest
 
 #ifdef GPSTest
 #include "gps/gps.h"
 #endif
 
+#ifdef IMUTest
+#include "imu/imu.h"
+#endif
+
 void setup() {
+  Serial.begin(9600);
+
   #ifdef LoraTest
   #endif
 
   #ifdef GPSTest
-  initGPS();
+  setupGPS();
   #endif
 
   #ifdef IMUTest
+  setupIMU();
   #endif
 }
 
@@ -29,5 +36,6 @@ void loop() {
   #endif
 
   #ifdef IMUTest
+  loopIMU();
   #endif
 }

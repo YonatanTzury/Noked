@@ -1,4 +1,4 @@
 
-void initGPS();
+void setupGPS();
 
 void loopGPS();
