@@ -4,43 +4,46 @@
 // #define GPSTest
 // #define IMUTest
 
+#ifdef GPSTest
+#include "gps/gps.h"
+#endif
+
+#ifdef IMUTest
+#include "imu/imu.h"
+#endif
+
 #ifdef LoraTest
 #include "manager\manager.h"
 
 Manager manager;
 #endif
-// put function declarations here:
 
 void setup() {
- // put your setup code here, to run once:
-  #ifdef LoraTest
   Serial.begin(9600);
 
+  #ifdef LoraTest
   manager.init();
-
-  while (true) {
-    manager.loop();
-  }
-
   #endif
 
   #ifdef GPSTest
+  setupGPS();
   #endif
 
   #ifdef IMUTest
+  setupIMU();
   #endif
 }
 
 void loop() {
-  // put your main code here, to run repeatedly:
   #ifdef LoraTest
+  manager.loop();
   #endif
 
   #ifdef GPSTest
+  loopGPS();
   #endif
 
   #ifdef IMUTest
+  loopIMU();
   #endif
 }
-
-// put function definitions here:
