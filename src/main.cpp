@@ -1,14 +1,27 @@
 #include <Arduino.h>
 
-#define LoraTest 1
-#define GPSTest 0
-#define IMUTest 0
+#define LoraTest
+// #define GPSTest
+// #define IMUTest
 
+#ifdef LoraTest
+#include "manager\manager.h"
+
+Manager manager;
+#endif
 // put function declarations here:
 
 void setup() {
-  // put your setup code here, to run once:
+ // put your setup code here, to run once:
   #ifdef LoraTest
+  Serial.begin(9600);
+
+  manager.init();
+
+  while (true) {
+    manager.loop();
+  }
+
   #endif
 
   #ifdef GPSTest
