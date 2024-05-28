@@ -2,6 +2,7 @@
 
 #include "..\lora\lora.h"
 #include "..\gps\gps.h"
+#include "..\imu\imu.h"
 
 struct Device
 {
@@ -31,5 +32,6 @@ class Manager {
   uint8_t id = DEVICE_ID;
   Lora lora;
   GPS gps;
+  IMU imu;
   double last_updated;
 };

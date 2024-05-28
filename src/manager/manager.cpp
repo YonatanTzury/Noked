@@ -9,6 +9,7 @@ void Manager::init() {
   SPIClass _hspi = SPIClass(HSPI);
   Manager::lora.init(lora1_nss, lora1_rst, lora1_dio0, _hspi);
   Manager::gps.init();
+  Manager::imu.init();
 
   Manager::devices[DEVICE_ID].is_active = 1;
   Manager::devices[DEVICE_ID].id = DEVICE_ID;
@@ -17,6 +18,9 @@ void Manager::init() {
 
 
 void Manager::loop() {
+  Manager::gps.update();
+  Manager::imu.update();
+
   if (millis() - Manager::last_updated > UPDATE_INTERVAL) {
     Manager::update();
   }
