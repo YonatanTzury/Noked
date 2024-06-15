@@ -1,10 +1,13 @@
-#include "../imu_gy85/IMUGY85.h"
+#include <Wire.h>
+#include <Adafruit_BNO055.h>
+#include <Adafruit_Sensor.h>
 class IMU {
  public:
-  void init();
-  void update();
+  IMU();
+  bool init();
   double getNorth(double lat, double lon, double alt);
 
  private:
-  IMUGY85 imu;
+  TwoWire _wire;
+  Adafruit_BNO055 bno; 
 };

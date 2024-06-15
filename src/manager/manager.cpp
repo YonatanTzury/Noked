@@ -27,7 +27,6 @@ void Manager::init() {
 
 void Manager::loop() {
   Manager::gps.update();
-  Manager::imu.update();
 
   if (millis() - Manager::last_updated > UPDATE_INTERVAL) {
     Manager::update();
