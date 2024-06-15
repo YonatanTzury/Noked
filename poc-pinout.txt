@@ -1,0 +1,32 @@
+LORA:
+	RST GPIO-33 - Yellow cable
+	NSS GPIO-15 (HSPI_SS) - Green cable
+	SCK GPIO-14 (HSPI_SCK) - Purple cable
+	MISO GPIO-12 (HSPI_MISO) - Blue cable
+	MOSI GPIO-13 (HSPI_MOSI) - Orange cable
+	GND
+	3.3V
+
+GPS:
+	RX GPIO-16 - White cable
+	TX GPIO-17 - Orange cable
+	GND
+	5V
+
+IMU:
+	SCL GPIO-22 (Wire SCL) - Green cable
+	SDA GPIO-21 (Wire SDA) - Yellow cable
+	GND
+	5V
+
+INA:
+	SCL GPIO-18 - Green cable
+	SDA GPIO-19 - Yellow cable
+	GND
+	5V
+
+TEMP:
+	SDA GPIO-2 - Purple cable
+	GND
+	5V
+
