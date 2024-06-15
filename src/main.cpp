@@ -1,13 +1,20 @@
 #include <Arduino.h>
 
-#define LoraTest
-// #define GPSTest
-// #define IMUTest
+#define LoraTest 1
+#define GPSTest 0
+#define IMUTest 0
 
 #ifdef LoraTest
-#include "manager\manager.h"
 
-Manager manager;
+#include "lora\lora.h"
+#define lora1_rst 32
+#define lora1_nss 15
+#define lora1_dio0 26
+
+Lora lora;
+
+const uint8_t buffer[10] = {'S', 't','e', 'v', 'e', 0};
+
 #endif
 // put function declarations here:
 
@@ -16,10 +23,27 @@ void setup() {
   #ifdef LoraTest
   Serial.begin(9600);
 
-  manager.init();
+  SPIClass _hspi = SPIClass(HSPI);
+
+  lora.init(lora1_nss, lora1_rst, lora1_dio0, _hspi);
+
+  int lastSend;
+  int counter;
 
   while (true) {
-    manager.loop();
+    if (millis() - lastSend > 1000) {
+      lastSend = millis();
+      counter++;
+      lora.send((byte*)&counter, sizeof(counter));
+      delay(10);
+    }
+
+    byte* res = NULL;
+    lora.read(res, 0);
+    if (res != NULL) {
+      Serial.printf("Recieved from lora: %d\n", *(int*)res);
+      free(res);
+    }
   }
 
   #endif
