@@ -3,10 +3,14 @@
 
 
 Error Manager::init() {
-  // SPIClass _hspi = SPIClass(HSPI);
-  SPIClass _hspi = SPIClass(VSPI);
-  // if (!Manager::lora.init(LORA1_NSS, LORA1_RST, LORA1_DIO0, _hspi)) {
-  if (!Manager::lora.init(5, 22, 21, _hspi)) {
+  SPIClass _hspi = SPIClass(HSPI);
+
+  Manager::devices[DEVICE_ID].is_active = 1;
+  Manager::devices[DEVICE_ID].id = DEVICE_ID;
+
+  Manager::gps.init(GPS_RX, GPS_TX);
+
+  if (!Manager::lora.init(LORA1_NSS, LORA1_RST, LORA1_DIO0, _hspi)) {
     return FAILED_INIT_LORA;
   }
 
@@ -17,11 +21,6 @@ Error Manager::init() {
   if (!Manager::elec.init(ELEC_SDA, ELEC_SCL)) {
     return FAILED_INIT_ELEC;
   }
-
-  Manager::gps.init(GPS_RX, GPS_TX);
-
-  Manager::devices[DEVICE_ID].is_active = 1;
-  Manager::devices[DEVICE_ID].id = DEVICE_ID;
 
   return SUCCESS;
 }

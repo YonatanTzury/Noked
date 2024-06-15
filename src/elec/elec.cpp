@@ -9,7 +9,7 @@ bool Elec::init(int sda, int scl) {
     return false;
   }
 
-  Elec::_ina.setCalibration_16V_400mA();
+  Elec::_ina.setCalibration_32V_2A();
 
   return true;
 }
