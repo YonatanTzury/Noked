@@ -56,11 +56,10 @@ class Manager {
   Device devices[MAX_DEVICES] = { 0 };
   Device tmp_devices[MAX_DEVICES] = { 0 };
   uint8_t id = DEVICE_ID;
-  Lora lora;
+  Lora lora = Lora(HSPI);
   GPS gps;
   IMU imu;
   Temperature temperature = Temperature(TEMPERATURE_PIN);
   Elec elec;
-  SPIClass _spi = SPIClass(HSPI);
   double last_updated = 0;
 };

@@ -1,9 +1,12 @@
 #include <Arduino.h>
 #include "lora.h"
 
-bool Lora::init(int nss, int rst, int dio0, SPIClass& spi) {
+Lora::Lora(uint8_t spi_bus) : _spi(SPIClass(spi_bus)) {
+  Lora::_lora.setSPI(Lora::_spi);
+}
+
+bool Lora::init(int nss, int rst, int dio0) {
   Lora::_lora.setPins(nss, rst, dio0);
-  Lora::_lora.setSPI(spi);
   Lora::_lora.enableCrc();
 
   return Lora::_lora.begin(433E6);

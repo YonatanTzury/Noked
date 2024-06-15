@@ -8,7 +8,7 @@ Error Manager::init() {
 
   Manager::gps.init(GPS_RX, GPS_TX);
 
-  if (!Manager::lora.init(LORA1_NSS, LORA1_RST, LORA1_DIO0, Manager::_spi)) {
+  if (!Manager::lora.init(LORA1_NSS, LORA1_RST, LORA1_DIO0)) {
     return FAILED_INIT_LORA;
   }
 
