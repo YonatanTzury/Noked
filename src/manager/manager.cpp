@@ -7,12 +7,17 @@
 
 #define temperature_pin 2
 
+#define elec_scl 12
+#define elec_sda 13
+
+Manager::Manager() : temperature(Temperature(temperature_pin)) {}
+
 void Manager::init() {
   SPIClass _hspi = SPIClass(HSPI);
   Manager::lora.init(lora1_nss, lora1_rst, lora1_dio0, _hspi);
   Manager::gps.init();
   Manager::imu.init();
-  Manager::temperature.init(temperature_pin);
+  Manager::elec.init(elec_sda, elec_scl);
 
   Manager::devices[DEVICE_ID].is_active = 1;
   Manager::devices[DEVICE_ID].id = DEVICE_ID;

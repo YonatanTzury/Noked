@@ -1,7 +1,6 @@
 #include "temperature.h"
 
-void Temperature::init(int pin) {
-  Temperature::_ds = DS18B20(pin);
+Temperature::Temperature(int pin) : _ds(DS18B20(pin)) {
   Temperature::_ds.selectNext();
 }
 

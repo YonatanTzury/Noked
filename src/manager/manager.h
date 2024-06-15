@@ -4,6 +4,7 @@
 #include "..\gps\gps.h"
 #include "..\imu\imu.h"
 #include "..\temperature\temperature.h"
+#include "..\elec\elec.h"
 
 struct Device
 {
@@ -21,6 +22,7 @@ struct Device
 
 class Manager {
  public:
+  Manager();
   void init();
   void loop();
 
@@ -35,5 +37,6 @@ class Manager {
   GPS gps;
   IMU imu;
   Temperature temperature;
+  Elec elec;
   double last_updated;
 };

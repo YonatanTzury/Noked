@@ -2,7 +2,7 @@
 
 class Temperature {
  public:
-  void init(int pin);
+  Temperature(int pin);
   float getTemp();
 
  private:
