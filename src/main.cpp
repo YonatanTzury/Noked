@@ -7,7 +7,11 @@ Manager manager;
 void setup() {
   Serial.begin(9600);
 
-  manager.init();
+  Error err = manager.init();
+  if (err != SUCCESS) {
+    Serial.printf("Error init manager: %d\n", err);
+    return;
+  }
 
   Serial.printf("Begin finished");
 }
