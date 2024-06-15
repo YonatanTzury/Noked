@@ -48,6 +48,7 @@ class Manager {
   void updateGPS();
   void transmitData();
   bool receiveData();
+  void debug();
 
   Device devices[MAX_DEVICES] = { 0 };
   Device tmp_devices[MAX_DEVICES] = { 0 };

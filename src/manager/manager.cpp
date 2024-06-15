@@ -34,6 +34,33 @@ void Manager::loop() {
   if (Manager::receiveData()) {
     Manager::transmitData();
   }
+
+  Manager::debug();
+}
+
+void Manager::debug() {
+  Serial.printf("Cur (mA): %f, Vol (V): %f\n",
+    Manager::elec.getCurrent_mA(), Manager::elec.getVoltage_V());
+
+  Serial.printf("Temp (c): %f\n", Manager::temperature.getTemp());
+
+  double alt;
+  if (!Manager::gps.getAltitude(&alt)) {
+    return;
+  }
+
+  Location loc;
+  if (!Manager::gps.getLocation(&loc)) {
+    return;
+  }
+  Serial.printf("Alt: %d, Lat: %d, lon: %d\n", loc.lat, loc.lon);
+
+  double northHeading;
+  if (!Manager::imu.getNorthHeading(loc.lat, loc.lon, alt, &northHeading)) {
+    return;
+  }
+
+  Serial.printf("North Heading: %d\n", northHeading);
 }
 
 bool Manager::receiveData() {
