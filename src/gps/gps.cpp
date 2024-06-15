@@ -1,12 +1,9 @@
 #include "gps.h"
 
-#define RXD2 16
-#define TXD2 17
-
 // Make sure invalid accures only in the benning
 
-void GPS::init() {
-  Serial2.begin(9600, SERIAL_8N1, RXD2, TXD2);
+void GPS::init(int rx, int tx) {
+  Serial2.begin(9600, SERIAL_8N1, rx, tx);
 }
 
 bool GPS::update() {

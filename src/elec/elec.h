@@ -13,6 +13,6 @@ class Elec {
 
  private:
   Adafruit_INA219 _ina;
-  TwoWire _wire = TwoWire(1);
+  TwoWire _wire = TwoWire(2);
 };
 

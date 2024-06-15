@@ -1,9 +1,10 @@
 LORA:
-	RST GPIO-33 - Yellow cable
+	RST GPIO-32 - Yellow cable
 	NSS GPIO-15 (HSPI_SS) - Green cable
 	SCK GPIO-14 (HSPI_SCK) - Purple cable
 	MISO GPIO-12 (HSPI_MISO) - Blue cable
 	MOSI GPIO-13 (HSPI_MOSI) - Orange cable
+	DIO GPIO-26 - Brown cable
 	GND
 	3.3V
 

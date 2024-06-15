@@ -27,11 +27,14 @@ struct Device
 #define LORA1_NSS 15
 #define LORA1_DIO0 26
 
-#define ELEC_SCL 12
-#define ELEC_SDA 13
+#define ELEC_SCL 18
+#define ELEC_SDA 19
 
-#define IMU_SCL 12
-#define IMU_SDA 13
+#define IMU_SCL 22
+#define IMU_SDA 21
+
+#define GPS_RX 16
+#define GPS_TX 17
 
 enum Error {
   SUCCESS,

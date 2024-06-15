@@ -10,7 +10,7 @@ struct Location
 
 class GPS {
  public:
-  void init();
+  void init(int rx, int tx);
   bool update();
   bool getLocation(Location* out);
   bool getAltitude(double* alt);

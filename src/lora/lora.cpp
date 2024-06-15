@@ -3,7 +3,7 @@
 
 bool Lora::init(int nss, int rst, int dio0, SPIClass& spi) {
   Lora::_lora.setPins(nss, rst, dio0);
-  Lora::_lora.setSPI(spi);
+  // Lora::_lora.setSPI(spi);
   Lora::_lora.enableCrc();
 
   return Lora::_lora.begin(433E6);
