@@ -7,13 +7,12 @@
 
 class Elec {
  public:
-  Elec();
   bool init(int sda, int scl);
   float getCurrent_mA();
   float getVoltage_V();
 
  private:
   Adafruit_INA219 _ina;
-  TwoWire _wire;
+  TwoWire _wire = TwoWire(1);
 };
 

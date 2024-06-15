@@ -1,49 +1,54 @@
 #include <Arduino.h>
 #include "manager.h"
 
-#define lora1_rst 32
-#define lora1_nss 15
-#define lora1_dio0 26
 
-#define temperature_pin 2
-
-#define elec_scl 12
-#define elec_sda 13
-
-Manager::Manager() : temperature(Temperature(temperature_pin)) {}
-
-void Manager::init() {
+Error Manager::init() {
   SPIClass _hspi = SPIClass(HSPI);
-  Manager::lora.init(lora1_nss, lora1_rst, lora1_dio0, _hspi);
+  if (!Manager::lora.init(LORA1_NSS, LORA1_RST, LORA1_DIO0, _hspi)) {
+    return FAILED_INIT_LORA;
+  }
+
+  if (!Manager::imu.init(IMU_SDA, IMU_SCL)) {
+    return FAILED_INIT_IMU;
+  }
+
+  if (!Manager::elec.init(ELEC_SDA, ELEC_SCL)) {
+    return FAILED_INIT_ELEC;
+  }
+
   Manager::gps.init();
-  Manager::imu.init();
-  Manager::elec.init(elec_sda, elec_scl);
 
   Manager::devices[DEVICE_ID].is_active = 1;
   Manager::devices[DEVICE_ID].id = DEVICE_ID;
-  Manager::update();
-}
 
+  return SUCCESS;
+}
 
 void Manager::loop() {
   Manager::gps.update();
 
   if (millis() - Manager::last_updated > UPDATE_INTERVAL) {
-    Manager::update();
+    Manager::updateGPS();
   }
 
+  if (Manager::receiveData()) {
+    Manager::transmitData();
+  }
+}
+
+bool Manager::receiveData() {
   size_t len = Manager::lora.read((byte*)Manager::tmp_devices, sizeof(Device)*MAX_DEVICES);
   if (len == 0) {
-    return;
+    return false;
   }
 
   if (len % sizeof(Device) != 0) {
-    return;
+    return false;
   }
 
   uint8_t amount_of_devices = len / sizeof(Device);
   if (amount_of_devices > MAX_DEVICES) {
-    return;
+    return false;
   }
 
   bool is_updated = false;
@@ -60,25 +65,28 @@ void Manager::loop() {
     is_updated = true;
   }
 
-  if (is_updated) {
-    Manager::sync();
-  }
+  return is_updated;
 }
 
-void Manager::update() {
+void Manager::updateGPS() {
   Location tmpLocation = { 0 };
   if (!Manager::gps.getLocation(&tmpLocation)) {
     return;
   }
   Manager::devices[DEVICE_ID].location = tmpLocation;
-  Manager::devices[DEVICE_ID].last_updated = Manager::gps.getTime();
+
+  double time;
+  if (!Manager::gps.getTime(&time)) {
+    return;
+  }
+  Manager::devices[DEVICE_ID].last_updated = time;
 
   Manager::last_updated = millis();
 
-  Manager::sync();
+  Manager::transmitData();
 }
 
-void Manager::sync() {
+void Manager::transmitData() {
   uint8_t counter = 0;
   for (int i = 0; i < MAX_DEVICES; i++) {
     if (Manager::devices[DEVICE_ID].is_active == 0) {

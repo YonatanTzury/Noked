@@ -14,11 +14,11 @@ class GPS {
   bool update();
   bool getLocation(Location* out);
   bool getAltitude(double* alt);
-  double getTime();
+  bool getTime(double* out);
 
  private:
   double baseTime;
-  double lastUpdated;
+  double lastUpdated = -1;
   TinyGPSPlus gps;
 
   bool rawGetTime(double* out);

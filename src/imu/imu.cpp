@@ -6,21 +6,25 @@
 
 IMU::IMU() : _wire(TwoWire(1)), bno(Adafruit_BNO055(55, 0x29, &_wire)) {}
 
-bool IMU::init() {
-    if (!IMU::bno.begin()) {
-        /* There was a problem detecting the BNO055 ... check your connections */
-        Serial.print("Ooops, no BNO055 detected ... Check your wiring or I2C ADDR!");
-        return false;
-    }
-
-    return true;
+bool IMU::init(int sda, int scl) {
+  if (!IMU::_wire.setPins(sda, scl)) {
+    return false;
+  }
+  
+  return IMU::bno.begin();
 }
 
-double IMU::getNorth(double lat, double lon, double alt) {
-//   geomag::Vector position = geomag::geodetic2ecef(lat, lon, alt);
-//   geomag::Vector mag_field = geomag::GeoMag(2022.5, position, geomag::WMM2020);
-//   geomag::Elements out = geomag::magField2Elements(mag_field, lat, lon);
+bool IMU::getNorth(double lat, double lon, double alt, double* out) {
+  geomag::Vector position = geomag::geodetic2ecef(lat, lon, alt);
+  geomag::Vector magField = geomag::GeoMag(2022.5, position, geomag::WMM2020);
+  geomag::Elements magneticFieldHeadingDiff = geomag::magField2Elements(magField, lat, lon);
 
-//   return imu.getYaw() + out.declination;
-    return 0.0;
+  sensors_event_t orientationData;
+  if (!bno.getEvent(&orientationData, Adafruit_BNO055::VECTOR_EULER)) {
+    return false;
+  }
+
+  *out =  orientationData.orientation.heading + magneticFieldHeadingDiff.declination;
+
+  return true;
 }

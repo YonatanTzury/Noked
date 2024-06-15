@@ -20,15 +20,34 @@ struct Device
 #define MAX_DEVICES 30
 #define DEVICE_ID 0
 
+// PINS
+#define TEMPERATURE_PIN 2
+
+#define LORA1_RST 32
+#define LORA1_NSS 15
+#define LORA1_DIO0 26
+
+#define ELEC_SCL 12
+#define ELEC_SDA 13
+
+#define IMU_SCL 12
+#define IMU_SDA 13
+
+enum Error {
+  SUCCESS,
+  FAILED_INIT_LORA,
+  FAILED_INIT_IMU,
+  FAILED_INIT_ELEC
+};
 class Manager {
  public:
-  Manager();
-  void init();
+  Error init();
   void loop();
 
  private:
-  void update();
-  void sync();
+  void updateGPS();
+  void transmitData();
+  bool receiveData();
 
   Device devices[MAX_DEVICES] = { 0 };
   Device tmp_devices[MAX_DEVICES] = { 0 };
@@ -36,7 +55,7 @@ class Manager {
   Lora lora;
   GPS gps;
   IMU imu;
-  Temperature temperature;
+  Temperature temperature = Temperature(TEMPERATURE_PIN);
   Elec elec;
-  double last_updated;
+  double last_updated = 0;
 };

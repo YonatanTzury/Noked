@@ -4,8 +4,8 @@
 class IMU {
  public:
   IMU();
-  bool init();
-  double getNorth(double lat, double lon, double alt);
+  bool init(int sda, int scl);
+  bool getNorth(double lat, double lon, double alt, double* out);
 
  private:
   TwoWire _wire;
