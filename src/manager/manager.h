@@ -61,5 +61,6 @@ class Manager {
   IMU imu;
   Temperature temperature = Temperature(TEMPERATURE_PIN);
   Elec elec;
+  SPIClass _spi = SPIClass(HSPI);
   double last_updated = 0;
 };

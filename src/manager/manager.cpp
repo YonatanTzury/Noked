@@ -3,14 +3,12 @@
 
 
 Error Manager::init() {
-  SPIClass _hspi = SPIClass(HSPI);
-
   Manager::devices[DEVICE_ID].is_active = 1;
   Manager::devices[DEVICE_ID].id = DEVICE_ID;
 
   Manager::gps.init(GPS_RX, GPS_TX);
 
-  if (!Manager::lora.init(LORA1_NSS, LORA1_RST, LORA1_DIO0, _hspi)) {
+  if (!Manager::lora.init(LORA1_NSS, LORA1_RST, LORA1_DIO0, Manager::_spi)) {
     return FAILED_INIT_LORA;
   }
 
