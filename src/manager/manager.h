@@ -3,6 +3,7 @@
 #include "..\lora\lora.h"
 #include "..\gps\gps.h"
 #include "..\imu\imu.h"
+#include "..\temperature\temperature.h"
 
 struct Device
 {
@@ -33,5 +34,6 @@ class Manager {
   Lora lora;
   GPS gps;
   IMU imu;
+  Temperature temperature;
   double last_updated;
 };

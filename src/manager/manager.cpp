@@ -5,11 +5,14 @@
 #define lora1_nss 15
 #define lora1_dio0 26
 
+#define temperature_pin 2
+
 void Manager::init() {
   SPIClass _hspi = SPIClass(HSPI);
   Manager::lora.init(lora1_nss, lora1_rst, lora1_dio0, _hspi);
   Manager::gps.init();
   Manager::imu.init();
+  Manager::temperature.init(temperature_pin);
 
   Manager::devices[DEVICE_ID].is_active = 1;
   Manager::devices[DEVICE_ID].id = DEVICE_ID;

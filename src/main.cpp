@@ -21,8 +21,6 @@ Manager manager;
 #endif
 
 #ifdef TMPTest
-#include <DS18B20.h>
-DS18B20 ds(32);
 #endif
 
 #ifdef INATest
@@ -88,10 +86,6 @@ void loop() {
   #endif
 
   #ifdef TMPTest
-  while (ds.selectNext()) {
-    Serial.printf("%d: %f\n", millis(), ds.getTempC());
-    delay(100);
-  }
   #endif
   
   #ifdef INATest
