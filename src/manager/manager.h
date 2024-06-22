@@ -11,27 +11,22 @@ struct Device
   bool is_active;
   uint8_t id;
   Location location;
-  double last_updated;
+  unsigned long last_updated;
 };
 
 #define UPDATE_INTERVAL (60 * 1000) // Minutes
 #define DEVICE_ALIVE_TIMOUT (300 * 1000) // 5 Minutes
+#define WRITE_TO_DISC_INTERVAL 10 // Minutes
 
 #define MAX_DEVICES 30
 #define DEVICE_ID 0
 
 // PINS
-#define TEMPERATURE_PIN 2
+#define TEMPERATURE_PIN 18
 
 #define LORA1_RST 32
 #define LORA1_NSS 15
 #define LORA1_DIO0 26
-
-#define ELEC_SCL 18
-#define ELEC_SDA 19
-
-#define IMU_SCL 22
-#define IMU_SDA 21
 
 #define GPS_RX 16
 #define GPS_TX 17
@@ -48,10 +43,12 @@ class Manager {
   void loop();
 
  private:
-  void updateGPS();
+  void updateData();
   void transmitData();
   bool receiveData();
   void debug();
+  bool writeToFlash();
+  bool readFromFlash();
 
   Device devices[MAX_DEVICES] = { 0 };
   Device tmp_devices[MAX_DEVICES] = { 0 };
@@ -61,5 +58,6 @@ class Manager {
   IMU imu;
   Temperature temperature = Temperature(TEMPERATURE_PIN);
   Elec elec;
-  double last_updated = 0;
+
+  unsigned long last_updated = 0;
 };

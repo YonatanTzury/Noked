@@ -1,4 +1,6 @@
+#include <EEPROM.h>
 #include <Arduino.h>
+#include <FastLED.h>
 #include "manager.h"
 
 
@@ -12,13 +14,16 @@ Error Manager::init() {
     return FAILED_INIT_LORA;
   }
 
-  if (!Manager::imu.init(IMU_SDA, IMU_SCL)) {
+  if (!Manager::imu.init()) {
     return FAILED_INIT_IMU;
   }
 
-  if (!Manager::elec.init(ELEC_SDA, ELEC_SCL)) {
+  if (!Manager::elec.init()) {
     return FAILED_INIT_ELEC;
   }
+
+  EEPROM.begin(Manager::imu.storage_length);
+  Manager::readFromFlash();
 
   return SUCCESS;
 }
@@ -27,14 +32,18 @@ void Manager::loop() {
   Manager::gps.update();
 
   if (millis() - Manager::last_updated > UPDATE_INTERVAL) {
-    Manager::updateGPS();
+    Manager::updateData();
+    Manager::transmitData();
   }
 
   if (Manager::receiveData()) {
     Manager::transmitData();
   }
 
-  Manager::debug();
+  // Handle error in some way?
+  EVERY_N_MINUTES(WRITE_TO_DISC_INTERVAL) { Manager::writeToFlash(); }
+
+  EVERY_N_SECONDS(1) { Manager::debug(); }
 }
 
 void Manager::debug() {
@@ -43,23 +52,55 @@ void Manager::debug() {
 
   Serial.printf("Temp (c): %f\n", Manager::temperature.getTemp());
 
-  double alt;
+  uint32_t satelites = 0;
+  if (!Manager::gps.getSatelites(&satelites)) {
+    return;
+  }
+  Serial.printf("Satelites: %d\n", satelites);
+
+  double alt = 0;
   if (!Manager::gps.getAltitude(&alt)) {
     return;
   }
 
-  Location loc;
+  Location loc = {0};
   if (!Manager::gps.getLocation(&loc)) {
     return;
   }
-  Serial.printf("Alt: %d, Lat: %d, lon: %d\n", loc.lat, loc.lon);
+  Serial.printf("Alt: %lf, Lat: %lf, lon: %lf\n", loc.lat, loc.lon);
 
   double northHeading;
   if (!Manager::imu.getNorthHeading(loc.lat, loc.lon, alt, &northHeading)) {
     return;
   }
+  Serial.printf("North Heading: %lf\n", northHeading);
+}
 
-  Serial.printf("North Heading: %d\n", northHeading);
+bool Manager::readFromFlash() {
+  uint8_t buf[Manager::imu.storage_length] = { 0 };
+  if (EEPROM.readBytes(0, buf, Manager::imu.storage_length) !=
+    Manager::imu.storage_length) {
+    return false;
+  }
+
+  Manager::imu.setOffsetsData(buf);
+  return true;
+}
+
+bool Manager::writeToFlash() {
+  Serial.printf("Writing to disk");
+
+  uint8_t buf[Manager::imu.storage_length] = { 0 };
+  if (!Manager::imu.getOffestsData(buf)) {
+    return false;
+  }
+
+  if (EEPROM.writeBytes(0, buf, Manager::imu.storage_length)
+    != Manager::imu.storage_length) {
+      return false;
+  }
+
+  return EEPROM.commit();
 }
 
 bool Manager::receiveData() {
@@ -94,7 +135,7 @@ bool Manager::receiveData() {
   return is_updated;
 }
 
-void Manager::updateGPS() {
+void Manager::updateData() {
   Location tmpLocation = { 0 };
   if (!Manager::gps.getLocation(&tmpLocation)) {
     return;
@@ -108,8 +149,6 @@ void Manager::updateGPS() {
   Manager::devices[DEVICE_ID].last_updated = time;
 
   Manager::last_updated = millis();
-
-  Manager::transmitData();
 }
 
 void Manager::transmitData() {

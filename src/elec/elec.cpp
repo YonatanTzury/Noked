@@ -1,11 +1,9 @@
+#include <Wire.h>
+
 #include "elec.h"
 
-bool Elec::init(int sda, int scl) {
-  if (!Elec::_wire.setPins(sda, scl)) {
-    return false;
-  }
-
-  if (!Elec::_ina.begin(&(Elec::_wire))) {
+bool Elec::init() {
+  if (!Elec::_ina.begin(&Wire)) {
     return false;
   }
 

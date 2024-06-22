@@ -13,7 +13,7 @@ void setup() {
     return;
   }
 
-  Serial.printf("Begin finished");
+  Serial.printf("Begin finished\n");
 }
 
 void loop() {

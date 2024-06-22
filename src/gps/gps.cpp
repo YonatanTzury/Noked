@@ -68,3 +68,17 @@ bool GPS::getAltitude(double* out) {
 
   return true;
 }
+
+bool GPS::getSatelites(uint32_t* out) {
+  if (!GPS::gps.satellites.isValid()) {
+    return false;
+  }
+
+  if (GPS::gps.satellites.age() > MAX_VALID_TIMEOUT) {
+    return false;
+  }
+
+  *out = GPS::gps.satellites.value();
+
+  return true;
+}

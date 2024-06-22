@@ -6,7 +6,7 @@ struct Location
   double lon;
 };
 
-#define MAX_VALID_TIMEOUT 1500
+#define MAX_VALID_TIMEOUT 60*1000
 
 class GPS {
  public:
@@ -15,6 +15,7 @@ class GPS {
   bool getLocation(Location* out);
   bool getAltitude(double* alt);
   bool getTime(double* out);
+  bool getSatelites(uint32_t* out);
 
  private:
   double baseTime;
