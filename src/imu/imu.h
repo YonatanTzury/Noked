@@ -3,7 +3,7 @@
 class IMU {
  public:
   IMU();
-  bool init();
+  bool init(int sda, int scl);
   bool getNorthHeading(double lat, double lon, double alt, double* out);
   bool getOffestsData(uint8_t* buf);
   void setOffsetsData(uint8_t* buf);

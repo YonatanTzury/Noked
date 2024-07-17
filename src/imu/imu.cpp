@@ -7,7 +7,8 @@
 
 IMU::IMU() : bno(Adafruit_BNO055(55, 0x29, &Wire)) {}
 
-bool IMU::init() {
+bool IMU::init(int sda, int scl) {
+  Wire.setPins(sda, scl);
   return IMU::bno.begin();
 }
 
@@ -23,7 +24,6 @@ void IMU::setOffsetsData(uint8_t* buf) {
     return;
   }
 
-  Serial.printf("Setting offests\n");
   IMU::bno.setSensorOffsets(*(adafruit_bno055_offsets_t*)buf);
 }
 
@@ -33,14 +33,14 @@ bool IMU::getNorthHeading(double lat, double lon, double alt, double* out) {
   geomag::Elements magneticFieldHeadingDiff = geomag::magField2Elements(magField, lat, lon);
 
   uint8_t sys, gyro, accel, mag = 0;
-  bno.getCalibration(&sys, &gyro, &accel, &mag);
+  IMU::bno.getCalibration(&sys, &gyro, &accel, &mag);
   if (mag != 3 && gyro != 3) {
     Serial.printf("Sys: %d, gyro: %d, accel: %d, mag: %d\n", sys, gyro, accel, mag);
     return false;
   }
 
   sensors_event_t orientationData;
-  if (!bno.getEvent(&orientationData, Adafruit_BNO055::VECTOR_EULER)) {
+  if (!IMU::bno.getEvent(&orientationData, Adafruit_BNO055::VECTOR_EULER)) {
     return false;
   }
 

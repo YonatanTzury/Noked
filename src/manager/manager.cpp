@@ -5,22 +5,27 @@
 
 
 Error Manager::init() {
+  pinMode(LED, OUTPUT);
+  pinMode(SPEAKER, OUTPUT);
+
   Manager::devices[DEVICE_ID].is_active = 1;
   Manager::devices[DEVICE_ID].id = DEVICE_ID;
 
   Manager::gps.init(GPS_RX, GPS_TX);
 
-  if (!Manager::lora.init(LORA1_NSS, LORA1_RST, LORA1_DIO0)) {
-    return FAILED_INIT_LORA;
-  }
-
-  if (!Manager::imu.init()) {
+  if (!Manager::imu.init(SDA, SCL)) {
+    Manager::init_success = 10;
     return FAILED_INIT_IMU;
   }
 
-  if (!Manager::elec.init()) {
-    return FAILED_INIT_ELEC;
+  if (!Manager::lora.init(LORA1_NSS, LORA1_RST, LORA1_DIO0, LORA1_SCK, LORA1_MISO, LORA1_MOSI)) {
+    Manager::init_success = 5;
+    return FAILED_INIT_LORA;
   }
+
+  // if (!Manager::elec.init()) {
+  //   return FAILED_INIT_ELEC;
+  // }
 
   EEPROM.begin(Manager::imu.storage_length);
   Manager::readFromFlash();
@@ -28,10 +33,16 @@ Error Manager::init() {
   return SUCCESS;
 }
 
+int led_mode = 0;
 void Manager::loop() {
+  EVERY_N_SECONDS(Manager::init_success) { led_mode = !led_mode; }
+  digitalWrite(LED, led_mode);
+
+  EVERY_N_SECONDS(4) { tone(SPEAKER, 440, 2000); }
+
   Manager::gps.update();
 
-  if (millis() - Manager::last_updated > UPDATE_INTERVAL) {
+  EVERY_N_MILLISECONDS(UPDATE_INTERVAL) {
     Manager::updateData();
     Manager::transmitData();
   }
@@ -47,11 +58,7 @@ void Manager::loop() {
 }
 
 void Manager::debug() {
-  Serial.printf("Cur (mA): %f, Vol (V): %f\n",
-    Manager::elec.getCurrent_mA(), Manager::elec.getVoltage_V());
-
-  Serial.printf("Temp (c): %f\n", Manager::temperature.getTemp());
-
+  Serial.printf("Debug\n");
   uint32_t satelites = 0;
   if (!Manager::gps.getSatelites(&satelites)) {
     return;

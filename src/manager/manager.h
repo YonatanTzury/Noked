@@ -22,14 +22,27 @@ struct Device
 #define DEVICE_ID 0
 
 // PINS
-#define TEMPERATURE_PIN 18
+// #define TEMPERATURE_PIN 18
 
-#define LORA1_RST 32
-#define LORA1_NSS 15
-#define LORA1_DIO0 26
+// #define LORA1_RST 32
+// #define LORA1_NSS 15
+// #define LORA1_DIO0 26
+#define LORA1_MISO 3
+#define LORA1_MOSI 4
+#define LORA1_SCK 5
+#define LORA1_RST 9
+#define LORA1_NSS 10
+#define LORA1_DIO0 0
 
-#define GPS_RX 16
-#define GPS_TX 17
+#define GPS_RX 20
+#define GPS_TX 21
+
+#define SDA 6
+#define SCL 7
+
+#define LED 2
+
+#define SPEAKER 8
 
 enum Error {
   SUCCESS,
@@ -53,11 +66,12 @@ class Manager {
   Device devices[MAX_DEVICES] = { 0 };
   Device tmp_devices[MAX_DEVICES] = { 0 };
   uint8_t id = DEVICE_ID;
-  Lora lora = Lora(HSPI);
+  Lora lora = Lora(0);
   GPS gps;
   IMU imu;
-  Temperature temperature = Temperature(TEMPERATURE_PIN);
-  Elec elec;
+  int init_success = 1;
+  // Temperature temperature = Temperature(TEMPERATURE_PIN);
+  // Elec elec;
 
   unsigned long last_updated = 0;
 };

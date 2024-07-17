@@ -3,8 +3,9 @@
 
 Lora::Lora(uint8_t spi_bus) : _spi(SPIClass(spi_bus)) {}
 
-bool Lora::init(int nss, int rst, int dio0) {
+bool Lora::init(int nss, int rst, int dio0, int sck, int miso, int mosi) {
   Lora::_lora.setPins(nss, rst, dio0);
+  Lora::_spi.begin(sck, miso, mosi, nss);
   Lora::_lora.setSPI(Lora::_spi);
   Lora::_lora.enableCrc();
 

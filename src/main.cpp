@@ -6,6 +6,9 @@ Manager manager;
 
 void setup() {
   Serial.begin(9600);
+  delay(1000);
+  // while(!Serial);
+  Serial.println("Init");
 
   Error err = manager.init();
   if (err != SUCCESS) {
@@ -14,6 +17,7 @@ void setup() {
   }
 
   Serial.printf("Begin finished\n");
+
 }
 
 void loop() {

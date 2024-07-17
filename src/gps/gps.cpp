@@ -3,14 +3,14 @@
 // Make sure invalid accures only in the benning
 
 void GPS::init(int rx, int tx) {
-  Serial2.begin(9600, SERIAL_8N1, rx, tx);
+  Serial1.begin(9600, SERIAL_8N1, rx, tx);
 }
 
 bool GPS::update() {
-  if (!Serial2.available()) {
+  if (!Serial1.available()) {
     return false;
   }
-  char serialRead = Serial2.read();
+  char serialRead = Serial1.read();
 
   GPS::gps.encode(serialRead);
 
