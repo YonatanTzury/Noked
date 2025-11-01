@@ -1,42 +1,80 @@
 #include <Arduino.h>
 #include "manager.h"
 
-#define lora1_rst 32
-#define lora1_nss 15
-#define lora1_dio0 26
 
-void Manager::init() {
-  SPIClass _hspi = SPIClass(HSPI);
-  Manager::lora.init(lora1_nss, lora1_rst, lora1_dio0, _hspi);
-  Manager::gps.init();
-  Manager::imu.init();
-
+Error Manager::init() {
   Manager::devices[DEVICE_ID].is_active = 1;
   Manager::devices[DEVICE_ID].id = DEVICE_ID;
-  Manager::update();
-}
 
+  Manager::gps.init(GPS_RX, GPS_TX);
+
+  if (!Manager::lora.init(LORA1_NSS, LORA1_RST, LORA1_DIO0)) {
+    return FAILED_INIT_LORA;
+  }
+
+  if (!Manager::imu.init(IMU_SDA, IMU_SCL)) {
+    return FAILED_INIT_IMU;
+  }
+
+  if (!Manager::elec.init(ELEC_SDA, ELEC_SCL)) {
+    return FAILED_INIT_ELEC;
+  }
+
+  return SUCCESS;
+}
 
 void Manager::loop() {
   Manager::gps.update();
-  Manager::imu.update();
 
   if (millis() - Manager::last_updated > UPDATE_INTERVAL) {
-    Manager::update();
+    Manager::updateGPS();
   }
 
+  if (Manager::receiveData()) {
+    Manager::transmitData();
+  }
+
+  Manager::debug();
+}
+
+void Manager::debug() {
+  Serial.printf("Cur (mA): %f, Vol (V): %f\n",
+    Manager::elec.getCurrent_mA(), Manager::elec.getVoltage_V());
+
+  Serial.printf("Temp (c): %f\n", Manager::temperature.getTemp());
+
+  double alt;
+  if (!Manager::gps.getAltitude(&alt)) {
+    return;
+  }
+
+  Location loc;
+  if (!Manager::gps.getLocation(&loc)) {
+    return;
+  }
+  Serial.printf("Alt: %d, Lat: %d, lon: %d\n", loc.lat, loc.lon);
+
+  double northHeading;
+  if (!Manager::imu.getNorthHeading(loc.lat, loc.lon, alt, &northHeading)) {
+    return;
+  }
+
+  Serial.printf("North Heading: %d\n", northHeading);
+}
+
+bool Manager::receiveData() {
   size_t len = Manager::lora.read((byte*)Manager::tmp_devices, sizeof(Device)*MAX_DEVICES);
   if (len == 0) {
-    return;
+    return false;
   }
 
   if (len % sizeof(Device) != 0) {
-    return;
+    return false;
   }
 
   uint8_t amount_of_devices = len / sizeof(Device);
   if (amount_of_devices > MAX_DEVICES) {
-    return;
+    return false;
   }
 
   bool is_updated = false;
@@ -53,25 +91,28 @@ void Manager::loop() {
     is_updated = true;
   }
 
-  if (is_updated) {
-    Manager::sync();
-  }
+  return is_updated;
 }
 
-void Manager::update() {
+void Manager::updateGPS() {
   Location tmpLocation = { 0 };
   if (!Manager::gps.getLocation(&tmpLocation)) {
     return;
   }
   Manager::devices[DEVICE_ID].location = tmpLocation;
-  Manager::devices[DEVICE_ID].last_updated = Manager::gps.getTime();
+
+  double time;
+  if (!Manager::gps.getTime(&time)) {
+    return;
+  }
+  Manager::devices[DEVICE_ID].last_updated = time;
 
   Manager::last_updated = millis();
 
-  Manager::sync();
+  Manager::transmitData();
 }
 
-void Manager::sync() {
+void Manager::transmitData() {
   uint8_t counter = 0;
   for (int i = 0; i < MAX_DEVICES; i++) {
     if (Manager::devices[DEVICE_ID].is_active == 0) {

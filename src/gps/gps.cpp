@@ -1,17 +1,9 @@
 #include "gps.h"
 
-#define RXD2 16
-#define TXD2 17
-
 // Make sure invalid accures only in the benning
 
-void GPS::init() {
-  Serial2.begin(9600, SERIAL_8N1, RXD2, TXD2);
-  // TODO maybe also get location and altitude until valid
-  while (!GPS::rawGetTime(&(GPS::baseTime))) {
-    delay(1000);
-  }
-  GPS::lastUpdated = millis();
+void GPS::init(int rx, int tx) {
+  Serial2.begin(9600, SERIAL_8N1, rx, tx);
 }
 
 bool GPS::update() {
@@ -25,13 +17,14 @@ bool GPS::update() {
   return true;
 }
 
-double GPS::getTime() {
-  double out;
-  if (GPS::rawGetTime(&out)) {
+bool GPS::getTime(double* out) {
+  if (GPS::rawGetTime(out)) {
     GPS::lastUpdated = millis();
-    GPS::baseTime = out;
+    GPS::baseTime = *out;
+  }
 
-    return out;
+  if (GPS::lastUpdated == -1) {
+    return false;
   }
 
   return (millis() - GPS::lastUpdated) + GPS::baseTime;

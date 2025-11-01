@@ -1,49 +1,21 @@
 #include <Arduino.h>
 
-#define LoraTest
-// #define GPSTest
-// #define IMUTest
-
-#ifdef GPSTest
-#include "gps/gps.h"
-#endif
-
-#ifdef IMUTest
-#include "imu/imu.h"
-#endif
-
-#ifdef LoraTest
 #include "manager\manager.h"
 
 Manager manager;
-#endif
 
 void setup() {
   Serial.begin(9600);
 
-  #ifdef LoraTest
-  manager.init();
-  #endif
+  Error err = manager.init();
+  if (err != SUCCESS) {
+    Serial.printf("Error init manager: %d\n", err);
+    return;
+  }
 
-  #ifdef GPSTest
-  setupGPS();
-  #endif
-
-  #ifdef IMUTest
-  setupIMU();
-  #endif
+  Serial.printf("Begin finished");
 }
 
 void loop() {
-  #ifdef LoraTest
   manager.loop();
-  #endif
-
-  #ifdef GPSTest
-  loopGPS();
-  #endif
-
-  #ifdef IMUTest
-  loopIMU();
-  #endif
 }

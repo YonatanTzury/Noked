@@ -1,19 +1,18 @@
 #include <Arduino.h>
 #include "lora.h"
 
-void Lora::init(int nss, int rst, int dio0, SPIClass& spi) {
+Lora::Lora(uint8_t spi_bus) : _spi(SPIClass(spi_bus)) {}
+
+bool Lora::init(int nss, int rst, int dio0) {
   Lora::_lora.setPins(nss, rst, dio0);
-  Lora::_lora.setSPI(spi);
+  Lora::_lora.setSPI(Lora::_spi);
   Lora::_lora.enableCrc();
 
-  while (!Lora::_lora.begin(433E6)) {
-    Serial.println(".");
-    delay(500);
-  }
-  Serial.println("Lora::_lora Initializing OK!");
+  return Lora::_lora.begin(433E6);
 }
 
 void Lora::send(const uint8_t* buffer, size_t size) {
+  // TODO: handle errors
   Lora::_lora.beginPacket();
   Lora::_lora.write(buffer, size);
   Lora::_lora.endPacket();
