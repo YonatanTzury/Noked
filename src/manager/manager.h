@@ -1,10 +1,8 @@
 #include <Arduino.h>
 
-#include "..\lora\lora.h"
-#include "..\gps\gps.h"
-#include "..\imu\imu.h"
-#include "..\temperature\temperature.h"
-#include "..\elec\elec.h"
+#include "../lora/lora.h"
+#include "../gps/gps.h"
+#include "../imu/imu.h"
 
 struct Device
 {
@@ -14,7 +12,7 @@ struct Device
   double last_updated;
 };
 
-#define UPDATE_INTERVAL (60 * 1000) // Minutes
+#define UPDATE_INTERVAL (60 * 1000)      // Minutes
 #define DEVICE_ALIVE_TIMOUT (300 * 1000) // 5 Minutes
 
 #define MAX_DEVICES 30
@@ -30,36 +28,36 @@ struct Device
 #define ELEC_SCL 18
 #define ELEC_SDA 19
 
-#define IMU_SCL 22
-#define IMU_SDA 21
+#define IMU_SCL 7
+#define IMU_SDA 6
 
 #define GPS_RX 16
 #define GPS_TX 17
 
-enum Error {
+enum Error
+{
   SUCCESS,
   FAILED_INIT_LORA,
   FAILED_INIT_IMU,
   FAILED_INIT_ELEC
 };
-class Manager {
- public:
+class Manager
+{
+public:
   Error init();
   void loop();
 
- private:
+private:
   void updateGPS();
   void transmitData();
   bool receiveData();
   void debug();
 
-  Device devices[MAX_DEVICES] = { 0 };
-  Device tmp_devices[MAX_DEVICES] = { 0 };
+  Device devices[MAX_DEVICES] = {0};
+  Device tmp_devices[MAX_DEVICES] = {0};
   uint8_t id = DEVICE_ID;
   Lora lora = Lora(HSPI);
   GPS gps;
   IMU imu;
-  Temperature temperature = Temperature(TEMPERATURE_PIN);
-  Elec elec;
   double last_updated = 0;
 };

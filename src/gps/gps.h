@@ -8,18 +8,19 @@ struct Location
 
 #define MAX_VALID_TIMEOUT 1500
 
-class GPS {
- public:
+class GPS
+{
+public:
   void init(int rx, int tx);
   bool update();
-  bool getLocation(Location* out);
-  bool getAltitude(double* alt);
-  bool getTime(double* out);
+  bool getLocation(Location *out);
+  bool getAltitude(double *alt);
+  bool getTime(double *out);
 
- private:
+private:
   double baseTime;
   double lastUpdated = -1;
   TinyGPSPlus gps;
 
-  bool rawGetTime(double* out);
+  bool rawGetTime(double *out);
 };
