@@ -12,10 +12,12 @@ class GPS
 {
 public:
   void init(int rx, int tx);
+  void stop();
   bool update();
   bool getLocation(Location *out);
   bool getAltitude(double *alt);
   bool getTime(double *out);
+  float getSatellites();
 
 private:
   double baseTime;

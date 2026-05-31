@@ -65,7 +65,8 @@ void Manager::debug()
 
 bool Manager::receiveData()
 {
-  size_t len = Manager::lora.read((byte *)Manager::tmp_devices, sizeof(Device) * MAX_DEVICES);
+  size_t packetSize = 0;
+  size_t len = Manager::lora.read((byte *)Manager::tmp_devices, sizeof(Device) * MAX_DEVICES, &packetSize);
   if (len == 0)
   {
     return false;

@@ -31,8 +31,8 @@ struct Device
 #define IMU_SCL 7
 #define IMU_SDA 6
 
-#define GPS_RX 16
-#define GPS_TX 17
+#define GPS_RX D7
+#define GPS_TX D6
 
 enum Error
 {

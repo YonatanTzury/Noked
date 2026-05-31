@@ -24,8 +24,8 @@ bool IMU::getNorthHeading(double lat, double lon, double alt, double *out)
 
   imu::Vector<3> euler = bno.getVector(Adafruit_BNO055::VECTOR_EULER);
   double heading = euler.x();
-  Serial.printf("Raw Orientation Data - Heading: %f, Roll: %f, Pitch: %f, Declination: %f\n",
-                heading, euler.y(), euler.z(), magneticFieldHeadingDiff.declination);
+  // Serial.printf("Raw Orientation Data - Heading: %f, Roll: %f, Pitch: %f, Declination: %f\n",
+  //               heading, euler.y(), euler.z(), magneticFieldHeadingDiff.declination);
 
   // Serial.printf("Orientation Data - Heading: %f, Mag Declination: %f\n",
   //               orientationData.orientation.heading,
