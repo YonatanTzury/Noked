@@ -19,7 +19,7 @@ public:
 
 private:
   double baseTime;
-  double lastUpdated = -1;
+  double lastUpdated;
   TinyGPSPlus gps;
 
   bool rawGetTime(double* out);
