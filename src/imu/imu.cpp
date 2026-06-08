@@ -5,10 +5,10 @@
 #include "XYZgeomag.hpp"
 
 IMU::IMU()
-    : _wire(TwoWire(1)), bno(Adafruit_BNO055(55, 0x29)) {
+    : bno(Adafruit_BNO055(55, 0x29)) {
 }
 
-bool IMU::init(int sda, int scl) {
+bool IMU::init() {
   return IMU::bno.begin();
 }
 

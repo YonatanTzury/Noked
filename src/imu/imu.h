@@ -4,10 +4,9 @@
 class IMU {
 public:
   IMU();
-  bool init(int sda, int scl);
+  bool init();
   bool getNorthHeading(double lat, double lon, double alt, double* out);
 
 private:
-  TwoWire _wire;
   Adafruit_BNO055 bno;
 };

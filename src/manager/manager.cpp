@@ -32,7 +32,7 @@ Error Manager::init() {
     return FAILED_INIT_LORA;
   }
 
-  if (!Manager::imu.init(IMU_SDA, IMU_SCL)) {
+  if (!Manager::imu.init()) {
     return FAILED_INIT_IMU;
   }
 
