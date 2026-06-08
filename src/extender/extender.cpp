@@ -42,12 +42,3 @@ void Extender::write(uint8_t pin, bool value)
 {
   Extender::pcf.digitalWrite(pin, value);
 }
-
-void Extender::resetPulse(uint8_t pin, uint32_t lowMs, uint32_t highMs)
-{
-  Extender::pcf.pinMode(pin, OUTPUT);
-  Extender::pcf.digitalWrite(pin, LOW);
-  delay(lowMs);
-  Extender::pcf.digitalWrite(pin, HIGH);
-  delay(highMs);
-}

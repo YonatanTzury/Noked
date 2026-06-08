@@ -15,9 +15,6 @@ public:
   void pinMode(uint8_t pin, uint8_t mode);
   void write(uint8_t pin, bool value);
 
-  // Drives `pin` low then high to generate a reset pulse (used for LoRa).
-  void resetPulse(uint8_t pin, uint32_t lowMs = 10, uint32_t highMs = 10);
-
 private:
   // Scans the I2C bus for the extender, skipping the BNO055 IMU (0x29).
   // Returns the address, or -1 if none found.

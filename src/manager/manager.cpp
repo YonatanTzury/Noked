@@ -24,7 +24,11 @@ Error Manager::init()
   Manager::gps.init(GPS_RX, GPS_TX);
 
   // Pulse the LoRa reset line (routed through the extender) before init.
-  Manager::extender.resetPulse(EXT_LORA_RST);
+  Manager::extender.pinMode(EXT_LORA_RST, OUTPUT);
+  Manager::extender.write(EXT_LORA_RST, LOW);
+  delay(10);
+  Manager::extender.write(EXT_LORA_RST, HIGH);
+  delay(10);
 
   if (!Manager::lora.init(LORA_NSS, LORA_RST, LORA_DIO0))
   {
