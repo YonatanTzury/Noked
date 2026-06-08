@@ -9,8 +9,7 @@
 //   GPS  ~45ma   IMU ~10ma
 // An INA219 backend can be added later for current sensing; for now this
 // only reports voltage via the on-board divider.
-class Battery
-{
+class Battery {
 public:
   void init(int pin);
   float readVoltage();

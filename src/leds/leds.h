@@ -6,8 +6,7 @@
 // Wraps the two WS2812 LED rings on a single FastLED data line.
 // Exposes a generic pixel/ring API; higher-level status logic is layered
 // on top of this elsewhere.
-class Leds
-{
+class Leds {
 public:
   static const uint16_t SMALL_RING_LEDS = 18;
   static const uint16_t BIG_RING_LEDS = 36;

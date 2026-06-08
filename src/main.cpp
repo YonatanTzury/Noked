@@ -4,15 +4,13 @@
 
 Manager manager;
 
-void setup()
-{
+void setup() {
   Serial.begin(115200);
   Serial.println("Begin setup!!!");
   delay(2000);
 
   Error err = manager.init();
-  if (err != SUCCESS)
-  {
+  if (err != SUCCESS) {
     Serial.printf("Manager init failed: %d\n", err);
     while (1)
       ;
@@ -21,7 +19,6 @@ void setup()
   Serial.println("[+] Initialization finished");
 }
 
-void loop()
-{
+void loop() {
   manager.loop();
 }

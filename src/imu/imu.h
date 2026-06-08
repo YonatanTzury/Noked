@@ -2,12 +2,12 @@
 #include <Adafruit_BNO055.h>
 #include <Adafruit_Sensor.h>
 class IMU {
- public:
+public:
   IMU();
   bool init(int sda, int scl);
   bool getNorthHeading(double lat, double lon, double alt, double* out);
 
- private:
+private:
   TwoWire _wire;
-  Adafruit_BNO055 bno; 
+  Adafruit_BNO055 bno;
 };

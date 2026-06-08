@@ -8,8 +8,7 @@
 #include "../leds/leds.h"
 #include "../battery/battery.h"
 
-struct Device
-{
+struct Device {
   bool is_active;
   uint8_t id;
   Location location;
@@ -22,16 +21,14 @@ struct Device
 #define MAX_DEVICES 30
 #define DEVICE_ID 0
 
-enum Error
-{
+enum Error {
   SUCCESS,
   FAILED_INIT_EXTENDER,
   FAILED_INIT_LORA,
   FAILED_INIT_IMU,
   FAILED_INIT_ELEC
 };
-class Manager
-{
+class Manager {
 public:
   Error init();
   void loop();
@@ -42,8 +39,8 @@ private:
   bool receiveData();
   void debug();
 
-  Device devices[MAX_DEVICES] = {0};
-  Device tmp_devices[MAX_DEVICES] = {0};
+  Device devices[MAX_DEVICES] = { 0 };
+  Device tmp_devices[MAX_DEVICES] = { 0 };
   uint8_t id = DEVICE_ID;
   Extender extender;
   Lora lora = Lora(FSPI);

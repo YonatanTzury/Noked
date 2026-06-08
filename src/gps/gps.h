@@ -1,22 +1,20 @@
 #include <TinyGPSPlus.h>
 
-struct Location
-{
+struct Location {
   double lat;
   double lon;
 };
 
 #define MAX_VALID_TIMEOUT 1500
 
-class GPS
-{
+class GPS {
 public:
   void init(int rx, int tx);
   void stop();
   bool update();
-  bool getLocation(Location *out);
-  bool getAltitude(double *alt);
-  bool getTime(double *out);
+  bool getLocation(Location* out);
+  bool getAltitude(double* alt);
+  bool getTime(double* out);
   float getSatellites();
 
 private:
@@ -24,5 +22,5 @@ private:
   double lastUpdated = -1;
   TinyGPSPlus gps;
 
-  bool rawGetTime(double *out);
+  bool rawGetTime(double* out);
 };

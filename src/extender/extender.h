@@ -5,8 +5,7 @@
 // Wraps the PCF8574 I2C I/O extender. The extender drives the MOSFETs that
 // power-gate the on-board devices, so it must be initialised before any of
 // them. It also owns the single Wire (I2C) bus shared with the IMU.
-class Extender
-{
+class Extender {
 public:
   // Brings up the I2C bus, locates the PCF8574 on the bus and begins it.
   // Returns false if no extender is found.

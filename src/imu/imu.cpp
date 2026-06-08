@@ -4,10 +4,11 @@
 #include "imu.h"
 #include "XYZgeomag.hpp"
 
-IMU::IMU() : _wire(TwoWire(1)), bno(Adafruit_BNO055(55, 0x29)) {}
+IMU::IMU()
+    : _wire(TwoWire(1)), bno(Adafruit_BNO055(55, 0x29)) {
+}
 
-bool IMU::init(int sda, int scl)
-{
+bool IMU::init(int sda, int scl) {
   // if (!IMU::_wire.setPins(sda, scl))
   // {
   //   return false;
@@ -16,8 +17,7 @@ bool IMU::init(int sda, int scl)
   return IMU::bno.begin();
 }
 
-bool IMU::getNorthHeading(double lat, double lon, double alt, double *out)
-{
+bool IMU::getNorthHeading(double lat, double lon, double alt, double* out) {
   geomag::Vector position = geomag::geodetic2ecef(lat, lon, alt);
   geomag::Vector magField = geomag::GeoMag(2022.5, position, geomag::WMM2020);
   geomag::Elements magneticFieldHeadingDiff = geomag::magField2Elements(magField, lat, lon);

@@ -4,96 +4,80 @@
 #include <HardwareSerial.h>
 HardwareSerial GPS_Serial(1);
 
-void GPS::init(int rx, int tx)
-{
-    pinMode(21, OUTPUT);
-    GPS_Serial.begin(38400, SERIAL_8N1, rx, tx);
+void GPS::init(int rx, int tx) {
+  pinMode(21, OUTPUT);
+  GPS_Serial.begin(38400, SERIAL_8N1, rx, tx);
 }
 
-void GPS::stop()
-{
-    GPS_Serial.end();
+void GPS::stop() {
+  GPS_Serial.end();
 }
 
-bool GPS::update()
-{
-    if (!GPS_Serial.available())
-    {
-        return false;
-    }
-    char serialRead = GPS_Serial.read();
+bool GPS::update() {
+  if (!GPS_Serial.available()) {
+    return false;
+  }
+  char serialRead = GPS_Serial.read();
 
-    GPS::gps.encode(serialRead);
+  GPS::gps.encode(serialRead);
 
-    return true;
+  return true;
 }
 
-bool GPS::getTime(double *out)
-{
-    if (GPS::rawGetTime(out))
-    {
-        GPS::lastUpdated = millis();
-        GPS::baseTime = *out;
-    }
+bool GPS::getTime(double* out) {
+  if (GPS::rawGetTime(out)) {
+    GPS::lastUpdated = millis();
+    GPS::baseTime = *out;
+  }
 
-    if (GPS::lastUpdated == -1)
-    {
-        return false;
-    }
+  if (GPS::lastUpdated == -1) {
+    return false;
+  }
 
-    return (millis() - GPS::lastUpdated) + GPS::baseTime;
+  return (millis() - GPS::lastUpdated) + GPS::baseTime;
 }
 
-bool GPS::rawGetTime(double *out)
-{
-    if (!GPS::gps.time.isValid())
-    {
-        return false;
-    }
+bool GPS::rawGetTime(double* out) {
+  if (!GPS::gps.time.isValid()) {
+    return false;
+  }
 
-    *out = (double)(GPS::gps.time.value());
+  *out = (double)(GPS::gps.time.value());
 
-    return true;
+  return true;
 }
 
-bool GPS::getLocation(Location *out)
-{
-    if (!GPS::gps.location.isValid())
-    {
-        return false;
-    }
+bool GPS::getLocation(Location* out) {
+  if (!GPS::gps.location.isValid()) {
+    return false;
+  }
 
-    if (GPS::gps.location.age() > MAX_VALID_TIMEOUT)
-    {
-        return false;
-    }
+  if (GPS::gps.location.age() > MAX_VALID_TIMEOUT) {
+    return false;
+  }
 
-    out->lat = GPS::gps.location.lat();
-    out->lon = GPS::gps.location.lng();
+  out->lat = GPS::gps.location.lat();
+  out->lon = GPS::gps.location.lng();
 
-    return true;
+  return true;
 }
 
-bool GPS::getAltitude(double *out)
-{
-    if (!GPS::gps.altitude.isValid())
-    {
-        return false;
-    }
+bool GPS::getAltitude(double* out) {
+  if (!GPS::gps.altitude.isValid()) {
+    return false;
+  }
 
-    if (GPS::gps.altitude.age() > MAX_VALID_TIMEOUT)
-    {
-        return false;
-    }
+  if (GPS::gps.altitude.age() > MAX_VALID_TIMEOUT) {
+    return false;
+  }
 
-    *out = GPS::gps.altitude.meters();
+  *out = GPS::gps.altitude.meters();
 
-    return true;
+  return true;
 }
 
-float GPS::getSatellites()
-{
-    return GPS::gps.satellites.value();
+float GPS::getSatellites() {
+  return GPS::gps.satellites.value();
 }
 
 /*
