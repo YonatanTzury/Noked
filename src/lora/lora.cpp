@@ -14,11 +14,12 @@ int Lora::rssi() {
 }
 
 size_t Lora::send(const uint8_t* buffer, size_t size) {
-  // TODO: handle errors
   if (Lora::_lora.beginPacket() == 0) {
     return 0;
   }
+
   size_t result = Lora::_lora.write(buffer, size);
+  // This fast return might not be correct, same for the next one :/
   if (result != size) {
     return 0;
   }
