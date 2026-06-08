@@ -1,8 +1,12 @@
 #include <Arduino.h>
 
+#include "../pins.h"
 #include "../lora/lora.h"
 #include "../gps/gps.h"
 #include "../imu/imu.h"
+#include "../extender/extender.h"
+#include "../leds/leds.h"
+#include "../battery/battery.h"
 
 struct Device
 {
@@ -18,25 +22,10 @@ struct Device
 #define MAX_DEVICES 30
 #define DEVICE_ID 0
 
-// PINS
-#define TEMPERATURE_PIN 2
-
-#define LORA1_RST 32
-#define LORA1_NSS 15
-#define LORA1_DIO0 26
-
-#define ELEC_SCL 18
-#define ELEC_SDA 19
-
-#define IMU_SCL 7
-#define IMU_SDA 6
-
-#define GPS_RX D7
-#define GPS_TX D6
-
 enum Error
 {
   SUCCESS,
+  FAILED_INIT_EXTENDER,
   FAILED_INIT_LORA,
   FAILED_INIT_IMU,
   FAILED_INIT_ELEC
@@ -56,8 +45,11 @@ private:
   Device devices[MAX_DEVICES] = {0};
   Device tmp_devices[MAX_DEVICES] = {0};
   uint8_t id = DEVICE_ID;
-  Lora lora = Lora(HSPI);
+  Extender extender;
+  Lora lora = Lora(FSPI);
   GPS gps;
   IMU imu;
+  Leds leds;
+  Battery battery;
   double last_updated = 0;
 };

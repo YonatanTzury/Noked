@@ -6,9 +6,27 @@ Error Manager::init()
   Manager::devices[DEVICE_ID].is_active = 1;
   Manager::devices[DEVICE_ID].id = DEVICE_ID;
 
+  // The extender brings up the shared I2C bus and the device power gates,
+  // so it must be initialised first.
+  if (!Manager::extender.init())
+  {
+    return FAILED_INIT_EXTENDER;
+  }
+
+  // Power on the GPS via its MOSFET gate.
+  Manager::extender.pinMode(EXT_GPS_POWER, OUTPUT);
+  Manager::extender.write(EXT_GPS_POWER, LOW);
+
+  Manager::leds.init();
+
+  Manager::battery.init(BATTERY_ADC);
+
   Manager::gps.init(GPS_RX, GPS_TX);
 
-  if (!Manager::lora.init(LORA1_NSS, LORA1_RST, LORA1_DIO0))
+  // Pulse the LoRa reset line (routed through the extender) before init.
+  Manager::extender.resetPulse(EXT_LORA_RST);
+
+  if (!Manager::lora.init(LORA_NSS, LORA_RST, LORA_DIO0))
   {
     return FAILED_INIT_LORA;
   }
@@ -52,7 +70,9 @@ void Manager::debug()
   {
     return;
   }
-  Serial.printf("Alt: %d, Lat: %d, lon: %d\n", loc.lat, loc.lon);
+  Serial.printf("Alt: %f, Lat: %f, lon: %f\n", alt, loc.lat, loc.lon);
+
+  Serial.printf("Battery: %f\n", Manager::battery.readVoltage());
 
   double northHeading;
   if (!Manager::imu.getNorthHeading(loc.lat, loc.lon, alt, &northHeading))
@@ -60,7 +80,7 @@ void Manager::debug()
     return;
   }
 
-  Serial.printf("North Heading: %d\n", northHeading);
+  Serial.printf("North Heading: %f\n", northHeading);
 }
 
 bool Manager::receiveData()
