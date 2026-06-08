@@ -116,10 +116,7 @@ void Manager::updateGPS() {
   }
   Manager::devices[DEVICE_ID].location = tmpLocation;
 
-  double time;
-  if (!Manager::gps.getTime(&time)) {
-    return;
-  }
+  double time = Manager::gps.getTime();
   Manager::devices[DEVICE_ID].last_updated = time;
 
   Manager::last_updated = millis();

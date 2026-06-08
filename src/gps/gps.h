@@ -9,12 +9,12 @@ struct Location {
 
 class GPS {
 public:
-  void init(int rx, int tx);
+  bool init(int rx, int tx);
   void stop();
   bool update();
   bool getLocation(Location* out);
   bool getAltitude(double* alt);
-  bool getTime(double* out);
+  double getTime();
   float getSatellites();
 
 private:

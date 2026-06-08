@@ -4,8 +4,23 @@
 #include <HardwareSerial.h>
 HardwareSerial GPS_Serial(1);
 
-void GPS::init(int rx, int tx) {
+bool GPS::init(int rx, int tx) {
   GPS_Serial.begin(38400, SERIAL_8N1, rx, tx);
+  bool didGetTime = false;
+  for (int i = 0; i < 10; i++) {
+    if (GPS::rawGetTime(&(GPS::baseTime))) {
+      didGetTime = true;
+      break;
+    }
+
+    delay(1000);
+  }
+  if (!didGetTime) {
+    return false;
+  }
+
+  GPS::lastUpdated = millis();
+  return true;
 }
 
 void GPS::stop() {
@@ -23,14 +38,12 @@ bool GPS::update() {
   return true;
 }
 
-bool GPS::getTime(double* out) {
-  if (GPS::rawGetTime(out)) {
+double GPS::getTime() {
+  double out = -1;
+  if (GPS::rawGetTime(&out)) {
     GPS::lastUpdated = millis();
-    GPS::baseTime = *out;
-  }
-
-  if (GPS::lastUpdated == -1) {
-    return false;
+    GPS::baseTime = out;
+    return out;
   }
 
   return (millis() - GPS::lastUpdated) + GPS::baseTime;
@@ -78,45 +91,3 @@ bool GPS::getAltitude(double* out) {
 float GPS::getSatellites() {
   return GPS::gps.satellites.value();
 }
-
-/*
-#include <TinyGPSPlus.h>
-#include <HardwareSerial.h>
-
-TinyGPSPlus gps;
-HardwareSerial GPS_Serial_2(1);
-
-#define GPS_RX D7 // XIAO D6
-#define GPS_TX D6 // XIAO D7
-
-void setup()
-{
-  Serial.begin(9600);
-  Serial.println("GPS starting...");
-  delay(1000);
-
-  GPS_Serial_2.begin(38400, SERIAL_8N1, GPS_RX, GPS_TX);
-}
-
-void loop()
-{
-  Serial.println("Reading GPS data...");
-  Serial.printf("Available bytes: %d\n", GPS_Serial_2.available());
-  while (GPS_Serial_2.available())
-  {
-    // Serial.println("Got data from GPS");
-    char serialRead = GPS_Serial_2.read();
-    Serial.printf("%c", serialRead);
-    gps.encode(serialRead);
-  }
-
-  Serial.printf("\nGPS location updated: %d\n", gps.location.isUpdated());
-  Serial.print("Lat: ");
-  Serial.println(gps.location.lat(), 6);
-  Serial.print("Lng: ");
-  Serial.println(gps.location.lng(), 6);
-  Serial.print("Satellites: ");
-  Serial.println(gps.satellites.value());
-  delay(1000);
-}
-*/
