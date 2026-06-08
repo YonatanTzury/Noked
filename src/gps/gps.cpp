@@ -34,7 +34,7 @@ bool GPS::update() {
 }
 
 double GPS::getTime() {
-  double out = -1;
+  double out;
   if (GPS::rawGetTime(&out)) {
     GPS::lastUpdated = millis();
     GPS::baseTime = out;
