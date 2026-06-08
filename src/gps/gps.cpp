@@ -5,7 +5,6 @@
 HardwareSerial GPS_Serial(1);
 
 void GPS::init(int rx, int tx) {
-  pinMode(21, OUTPUT);
   GPS_Serial.begin(38400, SERIAL_8N1, rx, tx);
 }
 

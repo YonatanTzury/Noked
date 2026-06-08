@@ -9,11 +9,6 @@ IMU::IMU()
 }
 
 bool IMU::init(int sda, int scl) {
-  // if (!IMU::_wire.setPins(sda, scl))
-  // {
-  //   return false;
-  // }
-
   return IMU::bno.begin();
 }
 
