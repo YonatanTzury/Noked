@@ -6,7 +6,6 @@ HardwareSerial GPS_Serial(1);
 
 bool GPS::init(int rx, int tx) {
   GPS_Serial.begin(38400, SERIAL_8N1, rx, tx);
-  bool didGetTime = false;
   for (int i = 0; i < 10; i++) {
     if (GPS::rawGetTime(&(GPS::baseTime))) {
       GPS::lastUpdated = millis();
