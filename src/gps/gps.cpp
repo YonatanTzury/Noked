@@ -9,18 +9,14 @@ bool GPS::init(int rx, int tx) {
   bool didGetTime = false;
   for (int i = 0; i < 10; i++) {
     if (GPS::rawGetTime(&(GPS::baseTime))) {
-      didGetTime = true;
-      break;
+      GPS::lastUpdated = millis();
+      return true;
     }
 
     delay(1000);
   }
-  if (!didGetTime) {
-    return false;
-  }
 
-  GPS::lastUpdated = millis();
-  return true;
+  return false;
 }
 
 void GPS::stop() {
