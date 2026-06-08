@@ -1,17 +1,16 @@
 #include <Arduino.h>
 #include "lora.h"
 
-Lora::Lora(uint8_t spi_bus)
-    : _spi(SPIClass(spi_bus)) {
-}
-
 bool Lora::init(int nss, int rst, int dio0) {
   Lora::_lora.setPins(nss, rst, dio0);
-  // Lora::_lora.setSPI(Lora::_spi);
   int res = Lora::_lora.begin(433E6);
   Lora::_lora.enableCrc();
   Lora::_lora.setSyncWord(0x34);
   return res;
+}
+
+int Lora::rssi() {
+  return Lora::_lora.rssi();
 }
 
 size_t Lora::send(const uint8_t* buffer, size_t size) {

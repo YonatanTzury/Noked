@@ -43,7 +43,7 @@ private:
   Device tmp_devices[MAX_DEVICES] = { 0 };
   uint8_t id = DEVICE_ID;
   Extender extender;
-  Lora lora = Lora(FSPI);
+  Lora lora;
   GPS gps;
   IMU imu;
   Leds leds;
