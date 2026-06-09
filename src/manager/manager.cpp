@@ -5,22 +5,141 @@ Error Manager::init() {
   Manager::devices[DEVICE_ID].is_active = 1;
   Manager::devices[DEVICE_ID].id = DEVICE_ID;
 
-  // The extender brings up the shared I2C bus and the device power gates,
-  // so it must be initialised first.
   if (!Manager::extender.init()) {
     return FAILED_INIT_EXTENDER;
   }
 
-  // Power on the GPS via its MOSFET gate.
+  Manager::extender.pinMode(EXT_BUTTON, INPUT);
   Manager::extender.pinMode(EXT_GPS_POWER, OUTPUT);
-  Manager::extender.write(EXT_GPS_POWER, LOW);
+  Manager::extender.pinMode(EXT_IMU_POWER, OUTPUT);
+
+  // Start with both power gates off in a known state.
+  Manager::controlGPSPower(false);
+  Manager::controlIMUPower(false);
+
+  if (!Manager::initLora()) {
+    return FAILED_INIT_LORA;
+  }
 
   Manager::leds.init();
-
   Manager::battery.init(BATTERY_ADC);
 
-  Manager::gps.init(GPS_RX, GPS_TX);
+  return SUCCESS;
+}
 
+void Manager::loop() {
+  Manager::readLoraAndUpdateMode();
+
+  switch (Manager::mode) {
+  case IDLE:
+    // 1. if gps / IMU is on -> turn off
+    Manager::controlGPSPower(false);
+    Manager::controlIMUPower(false);
+    break;
+
+  case USER_FACING:
+    Manager::controlIMUPower(true);
+
+    Manager::controlGPSPower(true);
+    Manager::gps.update();
+
+    // TODO: read IMU and show in leds + turn off leds
+
+    EVERY_N_SECONDS(1) {
+      Manager::updateGPS();
+      Manager::transmitData();
+    }
+    break;
+
+  case OTHER_DEVICE_USER_FACING:
+    Manager::controlIMUPower(false);
+
+    Manager::controlGPSPower(true);
+    Manager::gps.update();
+
+    EVERY_N_SECONDS(1) {
+      Manager::updateGPS();
+      Manager::transmitData();
+    }
+    break;
+  }
+
+  EVERY_N_SECONDS(1) {
+    Manager::debug();
+  }
+}
+
+unsigned long lastTimeBottonUnPressed = 0;
+unsigned long timeSetUserFaceing = 0;
+unsigned long timeSetOtherDeviceUserFacing = 0;
+
+void Manager::readLoraAndUpdateMode() {
+  unsigned long now = millis();
+  if (Manager::receiveData()) {
+    timeSetOtherDeviceUserFacing = now;
+  }
+
+  if (Manager::extender.read(EXT_BUTTON) == 0) {
+    lastTimeBottonUnPressed = now;
+  }
+  unsigned long durationButtonPressed = now - lastTimeBottonUnPressed;
+  if (durationButtonPressed >= MILLIS_BUTTON_PRESS) {
+    timeSetUserFaceing = now;
+  }
+
+  if (now <= timeSetUserFaceing + DEVICE_USER_FACING_TIMEOUT) {
+    Manager::mode = USER_FACING;
+    return;
+  }
+
+  if (now <= timeSetOtherDeviceUserFacing + DEVICE_USER_FACING_TIMEOUT) {
+    Manager::mode = OTHER_DEVICE_USER_FACING;
+    return;
+  }
+
+  Manager::mode = IDLE;
+}
+
+void Manager::controlGPSPower(bool on) {
+  if (Manager::gpsPowered == on) {
+    return;
+  }
+
+  if (!on) {
+    Manager::gps.stop();
+  }
+
+  Manager::gpsPowered = on;
+  Manager::extender.write(EXT_GPS_POWER, on ? LOW : HIGH);
+
+  if (on) {
+    Manager::gps.init(GPS_RX, GPS_TX);
+  }
+}
+
+void Manager::controlIMUPower(bool on) {
+  if (Manager::imuPowered == on) {
+    return;
+  }
+  Manager::imuPowered = on;
+  Manager::extender.write(EXT_IMU_POWER, on ? LOW : HIGH);
+
+  if (on) {
+    Manager::imu.init();
+  }
+}
+
+void Manager::readIMU() {
+  double alt;
+  Location loc;
+  if (!Manager::gps.getAltitude(&alt) || !Manager::gps.getLocation(&loc)) {
+    return;
+  }
+
+  Manager::imu.getNorthHeading(loc.lat, loc.lon, alt, &this->heading);
+}
+
+bool Manager::initLora() {
   // Pulse the LoRa reset line (routed through the extender) before init.
   Manager::extender.pinMode(EXT_LORA_RST, OUTPUT);
   Manager::extender.write(EXT_LORA_RST, LOW);
@@ -28,29 +147,7 @@ Error Manager::init() {
   Manager::extender.write(EXT_LORA_RST, HIGH);
   delay(10);
 
-  if (!Manager::lora.init(LORA_NSS, LORA_RST, LORA_DIO0)) {
-    return FAILED_INIT_LORA;
-  }
-
-  if (!Manager::imu.init()) {
-    return FAILED_INIT_IMU;
-  }
-
-  return SUCCESS;
-}
-
-void Manager::loop() {
-  Manager::gps.update();
-
-  if (millis() - Manager::last_updated > UPDATE_INTERVAL) {
-    Manager::updateGPS();
-  }
-
-  if (Manager::receiveData()) {
-    Manager::transmitData();
-  }
-
-  Manager::debug();
+  return Manager::lora.init(LORA_NSS, LORA_RST, LORA_DIO0);
 }
 
 void Manager::debug() {
@@ -120,18 +217,16 @@ void Manager::updateGPS() {
   Manager::devices[DEVICE_ID].last_updated = time;
 
   Manager::last_updated = millis();
-
-  Manager::transmitData();
 }
 
 void Manager::transmitData() {
   uint8_t counter = 0;
   for (int i = 0; i < MAX_DEVICES; i++) {
-    if (Manager::devices[DEVICE_ID].is_active == 0) {
+    if (Manager::devices[i].is_active == 0) {
       continue;
     }
 
-    if (millis() - Manager::devices[DEVICE_ID].last_updated > DEVICE_ALIVE_TIMOUT) {
+    if (millis() - Manager::devices[i].last_updated > DEVICE_ALIVE_TIMOUT) {
       continue;
     }
 

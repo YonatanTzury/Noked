@@ -35,3 +35,7 @@ void Extender::pinMode(uint8_t pin, uint8_t mode) {
 void Extender::write(uint8_t pin, bool value) {
   Extender::pcf.digitalWrite(pin, value);
 }
+
+bool Extender::read(uint8_t pin) {
+  return Extender::pcf.digitalRead(pin);
+}

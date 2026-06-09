@@ -28,4 +28,6 @@
 
 // --- PCF8574 I/O extender logical pins (drive MOSFET power gates) ---
 #define EXT_GPS_POWER 0 // MOSFET that powers the GPS module
+#define EXT_IMU_POWER 2 // MOSFET that powers the IMU module
 #define EXT_LORA_RST 3  // LoRa reset line routed through the extender
+#define EXT_BUTTON 7

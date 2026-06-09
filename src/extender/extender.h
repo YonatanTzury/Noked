@@ -13,6 +13,7 @@ public:
 
   void pinMode(uint8_t pin, uint8_t mode);
   void write(uint8_t pin, bool value);
+  bool read(uint8_t pin);
 
 private:
   // Scans the I2C bus for the extender, skipping the BNO055 IMU (0x29).
