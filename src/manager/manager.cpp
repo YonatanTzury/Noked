@@ -88,6 +88,14 @@ volatile bool extenderInterruptFlag = false;
 void IRAM_ATTR onExtenderInterrupt() { extenderInterruptFlag = true; }
 
 void Manager::readLoraAndUpdateMode() {
+#if !ENABLE_MODES
+  // Mode switching disabled at build time: keep draining incoming LoRa so the
+  // neighbor table stays fresh, but never leave USER_FACING.
+  Manager::receiveData();
+  Manager::mode = USER_FACING;
+  return;
+#endif
+
   unsigned long now = millis();
   if (Manager::receiveData()) {
     timeSetOtherDeviceUserFacing = now;

@@ -2,7 +2,7 @@
 
 #include "logger.h"
 
-LogLevel currentLogLevel = DEBUG;
+LogLevel currentLogLevel = LOG_LEVEL;
 
 static const char* levelTag(LogLevel level) {
   switch (level) {

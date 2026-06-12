@@ -22,7 +22,19 @@ struct Device {
 #define DEVICE_USER_FACING_TIMEOUT (1000 * 60 * 2) // 2 minutes
 
 #define MAX_DEVICES 30
+
+// Identifier this unit reports on the LoRa network. Override per-unit at build
+// time with a flag, e.g. -DDEVICE_ID=3.
+#ifndef DEVICE_ID
 #define DEVICE_ID 0
+#endif
+
+// When 1, the unit switches between IDLE / USER_FACING / OTHER_DEVICE_USER_FACING
+// based on the button and LoRa traffic. When 0 (-DENABLE_MODES=0), it stays in
+// USER_FACING permanently.
+#ifndef ENABLE_MODES
+#define ENABLE_MODES 1
+#endif
 
 enum Error {
   SUCCESS,
