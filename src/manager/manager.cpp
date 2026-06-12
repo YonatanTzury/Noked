@@ -9,6 +9,7 @@ Error Manager::init() {
   Manager::devices[DEVICE_ID].id = DEVICE_ID;
 
   if (!Manager::extender.init()) {
+    log(ERROR, "Manager init failed: extender init failed");
     return FAILED_INIT_EXTENDER;
   }
 
@@ -19,7 +20,7 @@ Error Manager::init() {
   // Seed the cached button state and clear any latched extender INT, then
   // react to button changes via the extender's INT line instead of polling.
   Manager::buttonPressed = Manager::extender.read(EXT_BUTTON);
-  ::pinMode(EXT_INT, INPUT_PULLUP);
+  pinMode(EXT_INT, INPUT_PULLUP);
   attachInterrupt(digitalPinToInterrupt(EXT_INT), onExtenderInterrupt, FALLING);
 
   // Start with both power gates off in a known state.
@@ -27,6 +28,7 @@ Error Manager::init() {
   Manager::controlIMUPower(false);
 
   if (!Manager::initLora()) {
+    log(ERROR, "Manager init failed: LoRa init failed");
     return FAILED_INIT_LORA;
   }
 
@@ -85,7 +87,9 @@ unsigned long timeSetOtherDeviceUserFacing = 0;
 // Set by the extender's INT line; the loop reads the button over I2C only
 // when this is set (I2C is unsafe inside an ISR).
 volatile bool extenderInterruptFlag = false;
-void IRAM_ATTR onExtenderInterrupt() { extenderInterruptFlag = true; }
+void IRAM_ATTR onExtenderInterrupt() {
+  extenderInterruptFlag = true;
+}
 
 void Manager::readLoraAndUpdateMode() {
 #if !ENABLE_MODES
@@ -138,6 +142,7 @@ void Manager::controlGPSPower(bool on) {
   }
 
   Manager::gpsPowered = on;
+  log(DEBUG, "Setting gps power %d", on);
   Manager::extender.write(EXT_GPS_POWER, on ? LOW : HIGH);
 
   if (on) {
@@ -150,6 +155,7 @@ void Manager::controlIMUPower(bool on) {
     return;
   }
   Manager::imuPowered = on;
+  log(DEBUG, "Setting imu power %d", on);
   Manager::extender.write(EXT_IMU_POWER, on ? LOW : HIGH);
 
   if (on) {
@@ -179,22 +185,26 @@ bool Manager::initLora() {
 }
 
 void Manager::debug() {
+  log(DEBUG, "Manager mode (0: idle, 1: user, 2: other user) %d", Manager::mode);
+  log(DEBUG, "Battery: %f", Manager::battery.readVoltage());
+  log(DEBUG, "Satellites: %d", Manager::gps.getSatellites());
 
   double alt;
   if (!Manager::gps.getAltitude(&alt)) {
+    log(DEBUG, "no gps altitude");
     return;
   }
 
   Location loc;
   if (!Manager::gps.getLocation(&loc)) {
+    log(DEBUG, "no gps location");
     return;
   }
   log(DEBUG, "Alt: %f, Lat: %f, lon: %f", alt, loc.lat, loc.lon);
 
-  log(DEBUG, "Battery: %f", Manager::battery.readVoltage());
-
   double northHeading;
   if (!Manager::imu.getNorthHeading(loc.lat, loc.lon, alt, &northHeading)) {
+    log(DEBUG, "No IMU north heading");
     return;
   }
 
