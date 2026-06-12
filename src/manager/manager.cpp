@@ -199,6 +199,15 @@ void Manager::debug() {
   }
 
   log(DEBUG, "North Heading: %f", northHeading);
+
+  for (int i = 0; i < MAX_DEVICES; i++) {
+    if (!Manager::devices[i].is_active) {
+      continue;
+    }
+    Device& d = Manager::devices[i];
+    log(DEBUG, "Device id: %u, lat: %f, lon: %f, last_updated: %f",
+        d.id, d.location.lat, d.location.lon, d.last_updated);
+  }
 }
 
 bool Manager::receiveData() {
