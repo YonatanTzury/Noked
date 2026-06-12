@@ -1,6 +1,8 @@
 #include <Arduino.h>
 #include "manager.h"
 
+void IRAM_ATTR onExtenderInterrupt();
+
 Error Manager::init() {
   Manager::devices[DEVICE_ID].is_active = 1;
   Manager::devices[DEVICE_ID].id = DEVICE_ID;
@@ -12,6 +14,12 @@ Error Manager::init() {
   Manager::extender.pinMode(EXT_BUTTON, INPUT);
   Manager::extender.pinMode(EXT_GPS_POWER, OUTPUT);
   Manager::extender.pinMode(EXT_IMU_POWER, OUTPUT);
+
+  // Seed the cached button state and clear any latched extender INT, then
+  // react to button changes via the extender's INT line instead of polling.
+  Manager::buttonPressed = Manager::extender.read(EXT_BUTTON);
+  ::pinMode(EXT_INT, INPUT_PULLUP);
+  attachInterrupt(digitalPinToInterrupt(EXT_INT), onExtenderInterrupt, FALLING);
 
   // Start with both power gates off in a known state.
   Manager::controlGPSPower(false);
@@ -73,13 +81,24 @@ unsigned long lastTimeBottonUnPressed = 0;
 unsigned long timeSetUserFaceing = 0;
 unsigned long timeSetOtherDeviceUserFacing = 0;
 
+// Set by the extender's INT line; the loop reads the button over I2C only
+// when this is set (I2C is unsafe inside an ISR).
+volatile bool extenderInterruptFlag = false;
+void IRAM_ATTR onExtenderInterrupt() { extenderInterruptFlag = true; }
+
 void Manager::readLoraAndUpdateMode() {
   unsigned long now = millis();
   if (Manager::receiveData()) {
     timeSetOtherDeviceUserFacing = now;
   }
 
-  if (Manager::extender.read(EXT_BUTTON) == 0) {
+  // Refresh the cached button state only when the extender signalled a change.
+  if (extenderInterruptFlag) {
+    extenderInterruptFlag = false;
+    Manager::buttonPressed = Manager::extender.read(EXT_BUTTON);
+  }
+
+  if (!Manager::buttonPressed) {
     lastTimeBottonUnPressed = now;
   }
   unsigned long durationButtonPressed = now - lastTimeBottonUnPressed;

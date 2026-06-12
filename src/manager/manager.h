@@ -63,6 +63,9 @@ private:
   Battery battery;
   double last_updated = 0;
   Mode mode = IDLE;
+  // Latest button state, refreshed from the extender only when its INT line
+  // signals a change (see EXT_INT). Avoids polling the button over I2C.
+  bool buttonPressed = false;
   // Assume powered on so the first control call drives the gate to a
   // known off state.
   bool gpsPowered = true;

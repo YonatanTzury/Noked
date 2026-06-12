@@ -15,7 +15,9 @@
 
 // --- LoRa (SPI / FSPI) ---
 #define LORA_NSS D1
-#define LORA_DIO0 D0
+// DIO0 is not wired to an MCU pin; RX is polled (parsePacket), so no DIO0
+// interrupt is used. Pass -1 as the LoRa DIO0 argument.
+#define LORA_DIO0 -1
 // Hardware RST line is not wired to an MCU pin; reset is pulsed via the
 // I/O extender (see EXT_LORA_RST). Pass -1 as the LoRa RST argument.
 #define LORA_RST -1
@@ -31,3 +33,6 @@
 #define EXT_IMU_POWER 2 // MOSFET that powers the IMU module
 #define EXT_LORA_RST 3  // LoRa reset line routed through the extender
 #define EXT_BUTTON 7
+
+// --- PCF8574 interrupt (INT) output, open-drain / active-low ---
+#define EXT_INT D0 // Goes low on any extender input change (button)
