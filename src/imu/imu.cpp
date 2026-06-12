@@ -1,6 +1,7 @@
 #include <Arduino.h>
 #include <utility/imumaths.h>
 
+#include "../logger/logger.h"
 #include "imu.h"
 #include "XYZgeomag.hpp"
 
@@ -19,12 +20,10 @@ bool IMU::getNorthHeading(double lat, double lon, double alt, double* out) {
 
   imu::Vector<3> euler = bno.getVector(Adafruit_BNO055::VECTOR_EULER);
   double heading = euler.x();
-  // Serial.printf("Raw Orientation Data - Heading: %f, Roll: %f, Pitch: %f, Declination: %f\n",
-  //               heading, euler.y(), euler.z(), magneticFieldHeadingDiff.declination);
 
-  // Serial.printf("Orientation Data - Heading: %f, Mag Declination: %f\n",
-  //               orientationData.orientation.heading,
-  //               magneticFieldHeadingDiff.declination);
+  log(DEBUG, "Raw Orientation Data - Heading: %f, Roll: %f, Pitch: %f, Declination: %f",
+      heading, euler.y(), euler.z(), magneticFieldHeadingDiff.declination);
+
   *out = heading + (double)magneticFieldHeadingDiff.declination;
 
   return true;

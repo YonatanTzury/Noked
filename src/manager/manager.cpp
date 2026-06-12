@@ -1,4 +1,5 @@
 #include <Arduino.h>
+#include "../logger/logger.h"
 #include "manager.h"
 
 void IRAM_ATTR onExtenderInterrupt();
@@ -180,16 +181,16 @@ void Manager::debug() {
   if (!Manager::gps.getLocation(&loc)) {
     return;
   }
-  Serial.printf("Alt: %f, Lat: %f, lon: %f\n", alt, loc.lat, loc.lon);
+  log(DEBUG, "Alt: %f, Lat: %f, lon: %f", alt, loc.lat, loc.lon);
 
-  Serial.printf("Battery: %f\n", Manager::battery.readVoltage());
+  log(DEBUG, "Battery: %f", Manager::battery.readVoltage());
 
   double northHeading;
   if (!Manager::imu.getNorthHeading(loc.lat, loc.lon, alt, &northHeading)) {
     return;
   }
 
-  Serial.printf("North Heading: %f\n", northHeading);
+  log(DEBUG, "North Heading: %f", northHeading);
 }
 
 bool Manager::receiveData() {
