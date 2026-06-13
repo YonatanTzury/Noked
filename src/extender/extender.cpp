@@ -1,4 +1,5 @@
 #include "extender.h"
+#include "../logger/logger.h"
 
 // I2C address of the BNO055 IMU, which lives on the same bus and must be
 // skipped while scanning for the extender.
@@ -9,18 +10,26 @@ bool Extender::init() {
 
   int address = Extender::findAddress();
   if (address == -1) {
+    log(ERROR, "failed to find extender address");
     return false;
   }
+  log(DEBUG, "Extender adress %d", address);
 
   return Extender::pcf.begin(address, &Wire);
 }
 
 int Extender::findAddress() {
-  for (byte address = 1; address < 127; address++) {
+  for (byte address = 8; address < 127; address++) {
     Wire.beginTransmission(address);
     byte error = Wire.endTransmission();
 
-    if (error == 0 && address != IMU_I2C_ADDRESS) {
+    if (error == 0 && address == IMU_I2C_ADDRESS) {
+      log(DEBUG, "extender address scan find IMU");
+      continue;
+    }
+
+
+    if (error == 0) {
       return address;
     }
   }

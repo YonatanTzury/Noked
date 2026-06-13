@@ -12,18 +12,39 @@ void IRAM_ATTR onExtenderInterrupt();
 // elsewhere so the lookup is always in range.
 static const CRGB DEVICE_COLORS[MAX_DEVICES] = {
   // Primaries + secondaries (~60deg apart) — maximally distinct.
-  CRGB::Red,        CRGB::Green,      CRGB::Blue,       CRGB::Yellow,
-  CRGB::Magenta,    CRGB::Cyan,
+  CRGB::Red,
+  CRGB::Green,
+  CRGB::Blue,
+  CRGB::Yellow,
+  CRGB::Magenta,
+  CRGB::Cyan,
   // Intermediate hues (~30deg apart).
-  CRGB::Orange,     CRGB::Purple,     CRGB::SpringGreen, CRGB::SkyBlue,
-  CRGB::DeepPink,   CRGB::Chartreuse,
+  CRGB::Orange,
+  CRGB::Purple,
+  CRGB::SpringGreen,
+  CRGB::SkyBlue,
+  CRGB::DeepPink,
+  CRGB::Chartreuse,
   // Finer fills — start to resemble the ones above.
-  CRGB::Gold,       CRGB::Indigo,     CRGB::Teal,       CRGB::Crimson,
-  CRGB::Lime,       CRGB::DodgerBlue, CRGB::Coral,      CRGB::Turquoise,
-  CRGB::Violet,     CRGB::SeaGreen,   CRGB::RoyalBlue,  CRGB::HotPink,
+  CRGB::Gold,
+  CRGB::Indigo,
+  CRGB::Teal,
+  CRGB::Crimson,
+  CRGB::Lime,
+  CRGB::DodgerBlue,
+  CRGB::Coral,
+  CRGB::Turquoise,
+  CRGB::Violet,
+  CRGB::SeaGreen,
+  CRGB::RoyalBlue,
+  CRGB::HotPink,
   // Closest shades — only reached at the highest ids.
-  CRGB::Salmon,     CRGB::Aqua,       CRGB::GreenYellow, CRGB::Tomato,
-  CRGB::Khaki,      CRGB::Pink,
+  CRGB::Salmon,
+  CRGB::Aqua,
+  CRGB::GreenYellow,
+  CRGB::Tomato,
+  CRGB::Khaki,
+  CRGB::Pink,
 };
 
 Error Manager::init() {
@@ -236,12 +257,20 @@ void Manager::drawDevices() {
 bool Manager::initLora() {
   // Pulse the LoRa reset line (routed through the extender) before init.
   Manager::extender.pinMode(EXT_LORA_RST, OUTPUT);
-  Manager::extender.write(EXT_LORA_RST, LOW);
-  delay(10);
-  Manager::extender.write(EXT_LORA_RST, HIGH);
-  delay(10);
+  for (int i = 0; i < 10; i++) {
+    log(DEBUG, "Trying to start LoRa, attempt: %d", i + 1);
+    Manager::extender.write(EXT_LORA_RST, LOW);
+    delay(10);
+    Manager::extender.write(EXT_LORA_RST, HIGH);
+    delay(10);
 
-  return Manager::lora.init(LORA_NSS, LORA_RST, LORA_DIO0);
+    if (Manager::lora.init(LORA_NSS, LORA_RST, LORA_DIO0)) {
+      return true;
+    }
+    delay(500);
+  }
+
+  return false;
 }
 
 void Manager::debug() {

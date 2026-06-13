@@ -3,15 +3,15 @@
 
 bool Lora::init(int nss, int rst, int dio0) {
   Lora::_lora.setPins(nss, rst, dio0);
-  for (int i = 0; i < 10; i++) {
-    if (Lora::_lora.begin(433E6)) {
-      Lora::_lora.enableCrc();
-      Lora::_lora.setSyncWord(0x34);
-      return true;
-    }
-
-    delay(1000);
+  // for (int i = 0; i < 10; i++) {
+  if (Lora::_lora.begin(433E6)) {
+    Lora::_lora.enableCrc();
+    Lora::_lora.setSyncWord(0x34);
+    return true;
   }
+
+  //   delay(1000);
+  // }
 
   return false;
 }
