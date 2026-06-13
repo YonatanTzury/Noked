@@ -1,90 +1,404 @@
 #include <Arduino.h>
+#include "../logger/logger.h"
 #include "manager.h"
 
-#define lora1_rst 32
-#define lora1_nss 15
-#define lora1_dio0 26
+void IRAM_ATTR onExtenderInterrupt();
 
-void Manager::init() {
-  SPIClass _hspi = SPIClass(HSPI);
-  Manager::lora.init(lora1_nss, lora1_rst, lora1_dio0, _hspi);
-  Manager::gps.init();
-  Manager::imu.init();
+// One LED color per device id (indexed by Device::id). Ordered most-distinct
+// first: the low ids get widely-separated hues (red/green/blue, then the
+// secondaries, then the intermediates) so the common case of a handful of
+// devices is maximally easy to tell apart; near-duplicate shades only appear
+// toward the upper ids. MAX_DEVICES entries; ids are bounded by MAX_DEVICES
+// elsewhere so the lookup is always in range.
+static const CRGB DEVICE_COLORS[MAX_DEVICES] = {
+  // Primaries + secondaries (~60deg apart) — maximally distinct.
+  CRGB::Red,
+  CRGB::Green,
+  CRGB::Blue,
+  CRGB::Yellow,
+  CRGB::Magenta,
+  CRGB::Cyan,
+  // Intermediate hues (~30deg apart).
+  CRGB::Orange,
+  CRGB::Purple,
+  CRGB::SpringGreen,
+  CRGB::SkyBlue,
+  CRGB::DeepPink,
+  CRGB::Chartreuse,
+  // Finer fills — start to resemble the ones above.
+  CRGB::Gold,
+  CRGB::Indigo,
+  CRGB::Teal,
+  CRGB::Crimson,
+  CRGB::Lime,
+  CRGB::DodgerBlue,
+  CRGB::Coral,
+  CRGB::Turquoise,
+  CRGB::Violet,
+  CRGB::SeaGreen,
+  CRGB::RoyalBlue,
+  CRGB::HotPink,
+  // Closest shades — only reached at the highest ids.
+  CRGB::Salmon,
+  CRGB::Aqua,
+  CRGB::GreenYellow,
+  CRGB::Tomato,
+  CRGB::Khaki,
+  CRGB::Pink,
+};
 
+Error Manager::init() {
   Manager::devices[DEVICE_ID].is_active = 1;
   Manager::devices[DEVICE_ID].id = DEVICE_ID;
-  Manager::update();
-}
 
-
-void Manager::loop() {
-  Manager::gps.update();
-  Manager::imu.update();
-
-  if (millis() - Manager::last_updated > UPDATE_INTERVAL) {
-    Manager::update();
+  if (!Manager::extender.init()) {
+    log(ERROR, "Manager init failed: extender init failed");
+    return FAILED_INIT_EXTENDER;
   }
 
-  size_t len = Manager::lora.read((byte*)Manager::tmp_devices, sizeof(Device)*MAX_DEVICES);
-  if (len == 0) {
+  Manager::extender.pinMode(EXT_BUTTON, INPUT);
+  Manager::extender.pinMode(EXT_GPS_POWER, OUTPUT);
+  Manager::extender.pinMode(EXT_IMU_POWER, OUTPUT);
+
+  // Seed the cached button state and clear any latched extender INT, then
+  // react to button changes via the extender's INT line instead of polling.
+  Manager::buttonPressed = Manager::extender.read(EXT_BUTTON);
+  pinMode(EXT_INT, INPUT_PULLUP);
+  attachInterrupt(digitalPinToInterrupt(EXT_INT), onExtenderInterrupt, FALLING);
+
+  // Start with both power gates off in a known state.
+  Manager::controlGPSPower(false);
+  Manager::controlIMUPower(false);
+
+  if (!Manager::initLora()) {
+    log(ERROR, "Manager init failed: LoRa init failed");
+    return FAILED_INIT_LORA;
+  }
+
+  Manager::leds.init();
+  Manager::battery.init(BATTERY_ADC);
+
+  return SUCCESS;
+}
+
+void Manager::loop() {
+  Manager::readLoraAndUpdateMode();
+
+  switch (Manager::mode) {
+  case IDLE:
+    // 1. if gps / IMU is on -> turn off
+    Manager::controlGPSPower(false);
+    Manager::controlIMUPower(false);
+    break;
+
+  case USER_FACING:
+    Manager::controlIMUPower(true);
+
+    Manager::controlGPSPower(true);
+    Manager::gps.update();
+
+    EVERY_N_SECONDS(1) {
+      Manager::updateGPS();
+      Manager::transmitData();
+      Manager::drawDevices();
+    }
+    break;
+
+  case OTHER_DEVICE_USER_FACING:
+    Manager::controlIMUPower(false);
+
+    Manager::controlGPSPower(true);
+    Manager::gps.update();
+
+    EVERY_N_SECONDS(1) {
+      Manager::updateGPS();
+      Manager::transmitData();
+    }
+    break;
+  }
+
+  EVERY_N_SECONDS(1) {
+    Manager::debug();
+  }
+}
+
+unsigned long lastTimeBottonUnPressed = 0;
+unsigned long timeSetUserFaceing = 0;
+unsigned long timeSetOtherDeviceUserFacing = 0;
+
+// Set by the extender's INT line; the loop reads the button over I2C only
+// when this is set (I2C is unsafe inside an ISR).
+volatile bool extenderInterruptFlag = false;
+void IRAM_ATTR onExtenderInterrupt() {
+  extenderInterruptFlag = true;
+}
+
+void Manager::readLoraAndUpdateMode() {
+#if !ENABLE_MODES
+  // Mode switching disabled at build time: keep draining incoming LoRa so the
+  // neighbor table stays fresh, but never leave USER_FACING.
+  Manager::receiveData();
+  Manager::mode = USER_FACING;
+  return;
+#endif
+
+  unsigned long now = millis();
+  if (Manager::receiveData()) {
+    timeSetOtherDeviceUserFacing = now;
+  }
+
+  // Refresh the cached button state only when the extender signalled a change.
+  if (extenderInterruptFlag) {
+    extenderInterruptFlag = false;
+    Manager::buttonPressed = Manager::extender.read(EXT_BUTTON);
+  }
+
+  if (!Manager::buttonPressed) {
+    lastTimeBottonUnPressed = now;
+  }
+  unsigned long durationButtonPressed = now - lastTimeBottonUnPressed;
+  if (durationButtonPressed >= MILLIS_BUTTON_PRESS) {
+    timeSetUserFaceing = now;
+  }
+
+  // Subtraction form is rollover-safe; the != 0 guard prevents a cold-start unit
+  // (timers default to 0) from latching into USER_FACING for the first timeout.
+  if (timeSetUserFaceing != 0 && now - timeSetUserFaceing <= DEVICE_USER_FACING_TIMEOUT) {
+    Manager::mode = USER_FACING;
     return;
+  }
+
+  if (timeSetOtherDeviceUserFacing != 0 && now - timeSetOtherDeviceUserFacing <= DEVICE_USER_FACING_TIMEOUT) {
+    Manager::mode = OTHER_DEVICE_USER_FACING;
+    return;
+  }
+
+  Manager::mode = IDLE;
+}
+
+void Manager::controlGPSPower(bool on) {
+  if (Manager::gpsPowered == on) {
+    return;
+  }
+
+  if (!on) {
+    Manager::gps.stop();
+  }
+
+  Manager::gpsPowered = on;
+  log(DEBUG, "Setting gps power %d", on);
+  Manager::extender.write(EXT_GPS_POWER, on ? LOW : HIGH);
+
+  if (on) {
+    Manager::gps.init(GPS_RX, GPS_TX);
+  }
+}
+
+void Manager::controlIMUPower(bool on) {
+  if (Manager::imuPowered == on) {
+    return;
+  }
+  Manager::imuPowered = on;
+  log(DEBUG, "Setting imu power %d", on);
+  Manager::extender.write(EXT_IMU_POWER, on ? LOW : HIGH);
+
+  if (on) {
+    Manager::imu.init();
+  }
+}
+
+void Manager::readIMU() {
+  double alt;
+  Location loc;
+  if (!Manager::gps.getAltitude(&alt) || !Manager::gps.getLocation(&loc)) {
+    return;
+  }
+
+  Manager::imu.getNorthHeading(loc.lat, loc.lon, alt, &this->heading);
+}
+
+void Manager::drawDevices() {
+  // Need this unit's own fix to compute bearings/distances to neighbors.
+  Location self = { 0 };
+  if (!Manager::gps.getLocation(&self)) {
+    return;
+  }
+
+  // Refresh the compass heading (where this unit currently faces).
+  Manager::readIMU();
+
+  uint32_t now = Manager::gps.getTime();
+
+  Manager::leds.clear();
+  for (int i = 0; i < MAX_DEVICES; i++) {
+    Device& d = Manager::devices[i];
+    if (i == DEVICE_ID || !d.is_active) {
+      continue;
+    }
+
+    // Skip stale neighbors (same liveness test as transmitData); keep them
+    // until we have a GPS epoch so a fresh boot still points at what it knows.
+    if (now != 0 && now - d.last_updated > DEVICE_ALIVE_TIMEOUT_SEC) {
+      continue;
+    }
+
+    double bearing = TinyGPSPlus::courseTo(self.lat, self.lon, d.location.lat, d.location.lon);
+    double dist = TinyGPSPlus::distanceBetween(self.lat, self.lon, d.location.lat, d.location.lon);
+
+    // Bearing relative to where this unit faces, then map distance to strength.
+    double rel = fmod(bearing - Manager::heading + 360.0, 360.0);
+    float strength = 1.0f - (float)min(dist / LED_MAX_RANGE_METERS, 1.0);
+
+    Manager::leds.drawAngle((float)rel, strength, DEVICE_COLORS[d.id]);
+  }
+  Manager::leds.show();
+}
+
+bool Manager::initLora() {
+  // Pulse the LoRa reset line (routed through the extender) before init.
+  Manager::extender.pinMode(EXT_LORA_RST, OUTPUT);
+  for (int i = 0; i < 10; i++) {
+    log(DEBUG, "Trying to start LoRa, attempt: %d", i + 1);
+    Manager::extender.write(EXT_LORA_RST, LOW);
+    delay(10);
+    Manager::extender.write(EXT_LORA_RST, HIGH);
+    delay(10);
+
+    if (Manager::lora.init(LORA_NSS, LORA_RST, LORA_DIO0)) {
+      return true;
+    }
+    delay(500);
+  }
+
+  return false;
+}
+
+void Manager::debug() {
+  log(DEBUG, "Manager mode (0: idle, 1: user, 2: other user) %d", Manager::mode);
+  log(DEBUG, "Battery: %f", Manager::battery.readVoltage());
+  log(DEBUG, "Satellites: %d", Manager::gps.getSatellites());
+
+  double alt;
+  if (!Manager::gps.getAltitude(&alt)) {
+    log(DEBUG, "no gps altitude");
+    return;
+  }
+
+  Location loc;
+  if (!Manager::gps.getLocation(&loc)) {
+    log(DEBUG, "no gps location");
+    return;
+  }
+  log(DEBUG, "Alt: %f, Lat: %f, lon: %f", alt, loc.lat, loc.lon);
+
+  double northHeading;
+  if (!Manager::imu.getNorthHeading(loc.lat, loc.lon, alt, &northHeading)) {
+    log(DEBUG, "No IMU north heading");
+    return;
+  }
+
+  log(DEBUG, "North Heading: %f", northHeading);
+
+  for (int i = 0; i < MAX_DEVICES; i++) {
+    if (!Manager::devices[i].is_active) {
+      continue;
+    }
+    Device& d = Manager::devices[i];
+    log(DEBUG, "Device id: %u, lat: %f, lon: %f, last_updated: %lu",
+        d.id, d.location.lat, d.location.lon, (unsigned long)d.last_updated);
+  }
+}
+
+bool Manager::receiveData() {
+  size_t packetSize = 0;
+  // A single LoRa packet holds at most MAX_DEVICES_PER_PACKET Devices, so only
+  // offer that much of the buffer; read() rejects anything larger.
+  size_t len = Manager::lora.read((byte*)Manager::tmp_devices, sizeof(Device) * MAX_DEVICES_PER_PACKET, &packetSize);
+  if (len == 0) {
+    return false;
   }
 
   if (len % sizeof(Device) != 0) {
-    return;
+    return false;
   }
 
   uint8_t amount_of_devices = len / sizeof(Device);
   if (amount_of_devices > MAX_DEVICES) {
-    return;
+    return false;
   }
 
   bool is_updated = false;
   for (int i = 0; i < amount_of_devices; i++) {
-    if (Manager::tmp_devices[i].id == DEVICE_ID) {
+    uint8_t id = Manager::tmp_devices[i].id;
+    if (id == DEVICE_ID) {
       continue;
     }
 
-    if (Manager::devices[i].last_updated > Manager::tmp_devices[i].last_updated) {
+    // The id comes off the wire, so bound it before indexing the table.
+    if (id >= MAX_DEVICES) {
       continue;
     }
 
-    Manager::devices[Manager::tmp_devices[i].id] = Manager::tmp_devices[i];
+    // Compare against the slot we are about to write, not the packet position
+    // (the sender compacts active devices, so position != id).
+    if (Manager::devices[id].last_updated >= Manager::tmp_devices[i].last_updated) {
+      continue;
+    }
+
+    Manager::devices[id] = Manager::tmp_devices[i];
     is_updated = true;
   }
 
-  if (is_updated) {
-    Manager::sync();
-  }
+  return is_updated;
 }
 
-void Manager::update() {
+void Manager::updateGPS() {
   Location tmpLocation = { 0 };
   if (!Manager::gps.getLocation(&tmpLocation)) {
     return;
   }
   Manager::devices[DEVICE_ID].location = tmpLocation;
-  Manager::devices[DEVICE_ID].last_updated = Manager::gps.getTime();
+
+  uint32_t time = Manager::gps.getTime();
+  Manager::devices[DEVICE_ID].last_updated = time;
 
   Manager::last_updated = millis();
-
-  Manager::sync();
 }
 
-void Manager::sync() {
+void Manager::transmitData() {
+  uint32_t now = Manager::gps.getTime();
+
   uint8_t counter = 0;
   for (int i = 0; i < MAX_DEVICES; i++) {
-    if (Manager::devices[DEVICE_ID].is_active == 0) {
+    if (Manager::devices[i].is_active == 0) {
       continue;
     }
 
-    if (millis() - Manager::devices[DEVICE_ID].last_updated > DEVICE_ALIVE_TIMOUT) {
+    // Drop stale neighbors. Skip the filter until we have a GPS epoch (now == 0),
+    // so a fresh boot without a fix still forwards what it knows.
+    if (now != 0 && now - Manager::devices[i].last_updated > DEVICE_ALIVE_TIMEOUT_SEC) {
       continue;
     }
 
     Manager::tmp_devices[counter] = Manager::devices[i];
     counter++;
+
+    // A full packet's worth is collected; flush it and keep going so the
+    // overflow is carried in further packets instead of being dropped.
+    if (counter == MAX_DEVICES_PER_PACKET) {
+      Manager::sendDevices(counter);
+      counter = 0;
+    }
   }
 
-  Manager::lora.send((byte*)Manager::tmp_devices, sizeof(Device)*counter);
+  // Flush the trailing partial packet (also the only packet in the common case).
+  if (counter > 0) {
+    Manager::sendDevices(counter);
+  }
+}
+
+void Manager::sendDevices(uint8_t count) {
+  if (Manager::lora.send((byte*)Manager::tmp_devices, sizeof(Device) * count) == 0) {
+    log(WARN, "lora send failed");
+  }
 }

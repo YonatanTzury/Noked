@@ -1,7 +1,6 @@
 #include <TinyGPSPlus.h>
 
-struct Location
-{
+struct Location {
   double lat;
   double lon;
 };
@@ -9,17 +8,19 @@ struct Location
 #define MAX_VALID_TIMEOUT 1500
 
 class GPS {
- public:
-  void init();
+public:
+  bool init(int rx, int tx);
+  void stop();
   bool update();
   bool getLocation(Location* out);
   bool getAltitude(double* alt);
-  double getTime();
+  uint32_t getTime();
+  float getSatellites();
 
- private:
-  double baseTime;
-  double lastUpdated;
+private:
+  uint32_t baseTime;    // GPS time as Unix epoch seconds at the last valid fix.
+  uint32_t lastUpdated; // millis() captured at the last valid fix.
   TinyGPSPlus gps;
 
-  bool rawGetTime(double* out);
+  bool rawGetTime(uint32_t* out);
 };
