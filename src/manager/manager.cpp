@@ -290,7 +290,7 @@ void Manager::transmitData() {
 
     // Drop stale neighbors. Skip the filter until we have a GPS epoch (now == 0),
     // so a fresh boot without a fix still forwards what it knows.
-    if (now - Manager::devices[i].last_updated > DEVICE_ALIVE_TIMEOUT_SEC) {
+    if (now != 0 && now - Manager::devices[i].last_updated > DEVICE_ALIVE_TIMEOUT_SEC) {
       continue;
     }
 
