@@ -119,12 +119,14 @@ void Manager::readLoraAndUpdateMode() {
     timeSetUserFaceing = now;
   }
 
-  if (now <= timeSetUserFaceing + DEVICE_USER_FACING_TIMEOUT) {
+  // Subtraction form is rollover-safe; the != 0 guard prevents a cold-start unit
+  // (timers default to 0) from latching into USER_FACING for the first timeout.
+  if (timeSetUserFaceing != 0 && now - timeSetUserFaceing <= DEVICE_USER_FACING_TIMEOUT) {
     Manager::mode = USER_FACING;
     return;
   }
 
-  if (now <= timeSetOtherDeviceUserFacing + DEVICE_USER_FACING_TIMEOUT) {
+  if (timeSetOtherDeviceUserFacing != 0 && now - timeSetOtherDeviceUserFacing <= DEVICE_USER_FACING_TIMEOUT) {
     Manager::mode = OTHER_DEVICE_USER_FACING;
     return;
   }
@@ -215,8 +217,8 @@ void Manager::debug() {
       continue;
     }
     Device& d = Manager::devices[i];
-    log(DEBUG, "Device id: %u, lat: %f, lon: %f, last_updated: %f",
-        d.id, d.location.lat, d.location.lon, d.last_updated);
+    log(DEBUG, "Device id: %u, lat: %f, lon: %f, last_updated: %lu",
+        d.id, d.location.lat, d.location.lon, (unsigned long)d.last_updated);
   }
 }
 
@@ -238,15 +240,23 @@ bool Manager::receiveData() {
 
   bool is_updated = false;
   for (int i = 0; i < amount_of_devices; i++) {
-    if (Manager::tmp_devices[i].id == DEVICE_ID) {
+    uint8_t id = Manager::tmp_devices[i].id;
+    if (id == DEVICE_ID) {
       continue;
     }
 
-    if (Manager::devices[i].last_updated > Manager::tmp_devices[i].last_updated) {
+    // The id comes off the wire, so bound it before indexing the table.
+    if (id >= MAX_DEVICES) {
       continue;
     }
 
-    Manager::devices[Manager::tmp_devices[i].id] = Manager::tmp_devices[i];
+    // Compare against the slot we are about to write, not the packet position
+    // (the sender compacts active devices, so position != id).
+    if (Manager::devices[id].last_updated >= Manager::tmp_devices[i].last_updated) {
+      continue;
+    }
+
+    Manager::devices[id] = Manager::tmp_devices[i];
     is_updated = true;
   }
 
@@ -260,20 +270,27 @@ void Manager::updateGPS() {
   }
   Manager::devices[DEVICE_ID].location = tmpLocation;
 
-  double time = Manager::gps.getTime();
+  uint32_t time = Manager::gps.getTime();
   Manager::devices[DEVICE_ID].last_updated = time;
 
   Manager::last_updated = millis();
 }
 
 void Manager::transmitData() {
+  // LoRa caps the payload at ~255 bytes, so only this many Devices fit per packet.
+  static const uint8_t MAX_PER_PACKET = 255 / sizeof(Device);
+
+  uint32_t now = Manager::gps.getTime();
+
   uint8_t counter = 0;
-  for (int i = 0; i < MAX_DEVICES; i++) {
+  for (int i = 0; i < MAX_DEVICES && counter < MAX_PER_PACKET; i++) {
     if (Manager::devices[i].is_active == 0) {
       continue;
     }
 
-    if (millis() - Manager::devices[i].last_updated > DEVICE_ALIVE_TIMOUT) {
+    // Drop stale neighbors. Skip the filter until we have a GPS epoch (now == 0),
+    // so a fresh boot without a fix still forwards what it knows.
+    if (now - Manager::devices[i].last_updated > DEVICE_ALIVE_TIMEOUT_SEC) {
       continue;
     }
 
@@ -281,5 +298,7 @@ void Manager::transmitData() {
     counter++;
   }
 
-  Manager::lora.send((byte*)Manager::tmp_devices, sizeof(Device) * counter);
+  if (Manager::lora.send((byte*)Manager::tmp_devices, sizeof(Device) * counter) == 0) {
+    log(WARN, "lora send failed");
+  }
 }

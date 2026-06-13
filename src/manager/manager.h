@@ -12,11 +12,11 @@ struct Device {
   bool is_active;
   uint8_t id;
   Location location;
-  double last_updated;
+  uint32_t last_updated; // GPS Unix epoch seconds of this device's last fix.
 };
 
-#define UPDATE_INTERVAL (60 * 1000)      // Minutes
-#define DEVICE_ALIVE_TIMOUT (300 * 1000) // 5 Minutes
+#define UPDATE_INTERVAL (60 * 1000)        // Minutes
+#define DEVICE_ALIVE_TIMEOUT_SEC (5 * 60)  // 5 Minutes, in epoch seconds
 
 #define MILLIS_BUTTON_PRESS 1000
 #define DEVICE_USER_FACING_TIMEOUT (1000 * 60 * 2) // 2 minutes
