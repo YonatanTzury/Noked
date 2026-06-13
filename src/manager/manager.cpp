@@ -224,7 +224,9 @@ void Manager::debug() {
 
 bool Manager::receiveData() {
   size_t packetSize = 0;
-  size_t len = Manager::lora.read((byte*)Manager::tmp_devices, sizeof(Device) * MAX_DEVICES, &packetSize);
+  // A single LoRa packet holds at most MAX_DEVICES_PER_PACKET Devices, so only
+  // offer that much of the buffer; read() rejects anything larger.
+  size_t len = Manager::lora.read((byte*)Manager::tmp_devices, sizeof(Device) * MAX_DEVICES_PER_PACKET, &packetSize);
   if (len == 0) {
     return false;
   }
@@ -277,13 +279,10 @@ void Manager::updateGPS() {
 }
 
 void Manager::transmitData() {
-  // LoRa caps the payload at ~255 bytes, so only this many Devices fit per packet.
-  static const uint8_t MAX_PER_PACKET = 255 / sizeof(Device);
-
   uint32_t now = Manager::gps.getTime();
 
   uint8_t counter = 0;
-  for (int i = 0; i < MAX_DEVICES && counter < MAX_PER_PACKET; i++) {
+  for (int i = 0; i < MAX_DEVICES; i++) {
     if (Manager::devices[i].is_active == 0) {
       continue;
     }
@@ -296,9 +295,23 @@ void Manager::transmitData() {
 
     Manager::tmp_devices[counter] = Manager::devices[i];
     counter++;
+
+    // A full packet's worth is collected; flush it and keep going so the
+    // overflow is carried in further packets instead of being dropped.
+    if (counter == MAX_DEVICES_PER_PACKET) {
+      Manager::sendDevices(counter);
+      counter = 0;
+    }
   }
 
-  if (Manager::lora.send((byte*)Manager::tmp_devices, sizeof(Device) * counter) == 0) {
+  // Flush the trailing partial packet (also the only packet in the common case).
+  if (counter > 0) {
+    Manager::sendDevices(counter);
+  }
+}
+
+void Manager::sendDevices(uint8_t count) {
+  if (Manager::lora.send((byte*)Manager::tmp_devices, sizeof(Device) * count) == 0) {
     log(WARN, "lora send failed");
   }
 }

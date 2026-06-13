@@ -23,6 +23,9 @@ struct Device {
 
 #define MAX_DEVICES 30
 
+// LoRa caps the payload at ~255 bytes; this is how many Devices fit in one packet.
+#define MAX_DEVICES_PER_PACKET (255 / sizeof(Device))
+
 // Identifier this unit reports on the LoRa network. Override per-unit at build
 // time with a flag, e.g. -DDEVICE_ID=3.
 #ifndef DEVICE_ID
@@ -60,6 +63,7 @@ private:
   void updateGPS();
   void readIMU();
   void transmitData();
+  void sendDevices(uint8_t count);
   bool receiveData();
   void debug();
   void readLoraAndUpdateMode();
