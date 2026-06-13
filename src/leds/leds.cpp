@@ -28,21 +28,25 @@ void Leds::setBig(uint16_t index, CRGB color) {
 }
 
 void Leds::drawAngle(float angle, float strength, CRGB color) {
-  // Normalize the angle (including the compile-time mounting offset) into [0,360).
-  float a = fmodf(angle + LED_BASE_ANGLE, 360.0f);
-  while (a < 0) {
-    a += 360.0f;
-  }
-
   if (strength < 0) {
     strength = 0;
   } else if (strength > 1) {
     strength = 1;
   }
 
+  // Each ring has its own mounting offset; normalize per ring into [0,360).
+  float aSmall = fmodf(angle + LED_SMALL_BASE_ANGLE, 360.0f);
+  while (aSmall < 0) {
+    aSmall += 360.0f;
+  }
+  float aBig = fmodf(angle + LED_BIG_BASE_ANGLE, 360.0f);
+  while (aBig < 0) {
+    aBig += 360.0f;
+  }
+
   // Nearest LED on each ring for this direction.
-  uint16_t big = (uint16_t)lroundf(a / 360.0f * BIG_RING_LEDS) % BIG_RING_LEDS;
-  uint16_t small = (uint16_t)lroundf(a / 360.0f * SMALL_RING_LEDS) % SMALL_RING_LEDS;
+  uint16_t big = (uint16_t)lroundf(aBig / 360.0f * BIG_RING_LEDS) % BIG_RING_LEDS;
+  uint16_t small = (uint16_t)lroundf(aSmall / 360.0f * SMALL_RING_LEDS) % SMALL_RING_LEDS;
 
   // Two-phase intensity: the upper half of strength controls the inner ring
   // (full=on, fading to off at the midpoint); the lower half then dims the

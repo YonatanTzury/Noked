@@ -3,10 +3,20 @@
 
 #include "../pins.h"
 
-// Physical mounting offset of LED index 0, in degrees clockwise from the unit's
-// forward direction. Override per-unit at build time, e.g. -DLED_BASE_ANGLE=90.
+// Physical mounting offset of LED index 0 on each ring, in degrees clockwise
+// from the unit's forward direction. The two rings can be mounted at different
+// rotations, so each has its own offset. Override per-unit at build time, e.g.
+// -DLED_SMALL_BASE_ANGLE=90 -DLED_BIG_BASE_ANGLE=10.
+//
+// LED_BASE_ANGLE remains as a shared fallback for both rings.
 #ifndef LED_BASE_ANGLE
 #define LED_BASE_ANGLE 0
+#endif
+#ifndef LED_SMALL_BASE_ANGLE
+#define LED_SMALL_BASE_ANGLE LED_BASE_ANGLE
+#endif
+#ifndef LED_BIG_BASE_ANGLE
+#define LED_BIG_BASE_ANGLE LED_BASE_ANGLE
 #endif
 
 // Brightness floor (0-255) for the outer ring at minimum strength, so the
@@ -31,7 +41,8 @@ public:
   void setBig(uint16_t index, CRGB color);
 
   // Light the nearest LED on each ring toward `angle` (degrees, clockwise from
-  // the unit's forward direction; LED_BASE_ANGLE is added on top). `strength`
+  // the unit's forward direction; each ring's own base angle is added on top).
+  // `strength`
   // in [0,1] controls intensity: at full strength both rings are fully lit; as
   // it drops the inner ring fades out first, then the outer ring dims toward a
   // faint floor. Writes into the framebuffer; caller owns clear()/show().
