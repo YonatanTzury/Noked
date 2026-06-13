@@ -3,6 +3,16 @@
 
 #include "../pins.h"
 
+// Physical mounting offset of LED index 0, in degrees clockwise from the unit's
+// forward direction. Override per-unit at build time, e.g. -DLED_BASE_ANGLE=90.
+#ifndef LED_BASE_ANGLE
+#define LED_BASE_ANGLE 0
+#endif
+
+// Brightness floor (0-255) for the outer ring at minimum strength, so the
+// nearest-direction pixel stays faintly visible instead of going dark.
+#define LED_OUTER_MIN_BRIGHTNESS 30
+
 // Wraps the two WS2812 LED rings on a single FastLED data line.
 // Exposes a generic pixel/ring API; higher-level status logic is layered
 // on top of this elsewhere.
@@ -19,6 +29,13 @@ public:
   // Ring-relative helpers.
   void setSmall(uint16_t index, CRGB color);
   void setBig(uint16_t index, CRGB color);
+
+  // Light the nearest LED on each ring toward `angle` (degrees, clockwise from
+  // the unit's forward direction; LED_BASE_ANGLE is added on top). `strength`
+  // in [0,1] controls intensity: at full strength both rings are fully lit; as
+  // it drops the inner ring fades out first, then the outer ring dims toward a
+  // faint floor. Writes into the framebuffer; caller owns clear()/show().
+  void drawAngle(float angle, float strength, CRGB color);
 
   void clear();
   void setBrightness(uint8_t brightness);

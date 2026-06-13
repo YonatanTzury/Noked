@@ -4,6 +4,28 @@
 
 void IRAM_ATTR onExtenderInterrupt();
 
+// One LED color per device id (indexed by Device::id). Ordered most-distinct
+// first: the low ids get widely-separated hues (red/green/blue, then the
+// secondaries, then the intermediates) so the common case of a handful of
+// devices is maximally easy to tell apart; near-duplicate shades only appear
+// toward the upper ids. MAX_DEVICES entries; ids are bounded by MAX_DEVICES
+// elsewhere so the lookup is always in range.
+static const CRGB DEVICE_COLORS[MAX_DEVICES] = {
+  // Primaries + secondaries (~60deg apart) — maximally distinct.
+  CRGB::Red,        CRGB::Green,      CRGB::Blue,       CRGB::Yellow,
+  CRGB::Magenta,    CRGB::Cyan,
+  // Intermediate hues (~30deg apart).
+  CRGB::Orange,     CRGB::Purple,     CRGB::SpringGreen, CRGB::SkyBlue,
+  CRGB::DeepPink,   CRGB::Chartreuse,
+  // Finer fills — start to resemble the ones above.
+  CRGB::Gold,       CRGB::Indigo,     CRGB::Teal,       CRGB::Crimson,
+  CRGB::Lime,       CRGB::DodgerBlue, CRGB::Coral,      CRGB::Turquoise,
+  CRGB::Violet,     CRGB::SeaGreen,   CRGB::RoyalBlue,  CRGB::HotPink,
+  // Closest shades — only reached at the highest ids.
+  CRGB::Salmon,     CRGB::Aqua,       CRGB::GreenYellow, CRGB::Tomato,
+  CRGB::Khaki,      CRGB::Pink,
+};
+
 Error Manager::init() {
   Manager::devices[DEVICE_ID].is_active = 1;
   Manager::devices[DEVICE_ID].id = DEVICE_ID;
@@ -54,11 +76,10 @@ void Manager::loop() {
     Manager::controlGPSPower(true);
     Manager::gps.update();
 
-    // TODO: read IMU and show in leds + turn off leds
-
     EVERY_N_SECONDS(1) {
       Manager::updateGPS();
       Manager::transmitData();
+      Manager::drawDevices();
     }
     break;
 
@@ -173,6 +194,43 @@ void Manager::readIMU() {
   }
 
   Manager::imu.getNorthHeading(loc.lat, loc.lon, alt, &this->heading);
+}
+
+void Manager::drawDevices() {
+  // Need this unit's own fix to compute bearings/distances to neighbors.
+  Location self = { 0 };
+  if (!Manager::gps.getLocation(&self)) {
+    return;
+  }
+
+  // Refresh the compass heading (where this unit currently faces).
+  Manager::readIMU();
+
+  uint32_t now = Manager::gps.getTime();
+
+  Manager::leds.clear();
+  for (int i = 0; i < MAX_DEVICES; i++) {
+    Device& d = Manager::devices[i];
+    if (i == DEVICE_ID || !d.is_active) {
+      continue;
+    }
+
+    // Skip stale neighbors (same liveness test as transmitData); keep them
+    // until we have a GPS epoch so a fresh boot still points at what it knows.
+    if (now != 0 && now - d.last_updated > DEVICE_ALIVE_TIMEOUT_SEC) {
+      continue;
+    }
+
+    double bearing = TinyGPSPlus::courseTo(self.lat, self.lon, d.location.lat, d.location.lon);
+    double dist = TinyGPSPlus::distanceBetween(self.lat, self.lon, d.location.lat, d.location.lon);
+
+    // Bearing relative to where this unit faces, then map distance to strength.
+    double rel = fmod(bearing - Manager::heading + 360.0, 360.0);
+    float strength = 1.0f - (float)min(dist / LED_MAX_RANGE_METERS, 1.0);
+
+    Manager::leds.drawAngle((float)rel, strength, DEVICE_COLORS[d.id]);
+  }
+  Manager::leds.show();
 }
 
 bool Manager::initLora() {

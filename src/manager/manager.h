@@ -23,6 +23,10 @@ struct Device {
 
 #define MAX_DEVICES 30
 
+// Distance (meters) at or beyond which another device shows at minimum LED
+// strength; closer devices ramp linearly up to full strength.
+#define LED_MAX_RANGE_METERS 1000.0
+
 // LoRa caps the payload at ~255 bytes; this is how many Devices fit in one packet.
 #define MAX_DEVICES_PER_PACKET (255 / sizeof(Device))
 
@@ -62,6 +66,7 @@ private:
   bool initLora();
   void updateGPS();
   void readIMU();
+  void drawDevices();
   void transmitData();
   void sendDevices(uint8_t count);
   bool receiveData();
